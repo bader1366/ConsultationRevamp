@@ -23,7 +23,7 @@ This document is the **required source-analysis pass** of GREENFIELD §1.2: an e
 
 1. GREENFIELD owner requirements (§2, §5);
 2. GREENFIELD non-negotiables I1–I18 (§7);
-3. settled MASTER_PROMPT decisions explicitly carried forward (SD-01…SD-16 below);
+3. settled owner decisions carried forward or issued since (SD-01…SD-17 below);
 4. this package's recommendations, with alternatives and revisit-triggers;
 5. current legacy behaviour — only where still justified. **Current behaviour is never an argument for keeping current behaviour** [FACT GREENFIELD §1.1].
 
@@ -376,6 +376,7 @@ Owner decisions that bind this package. Each is [DECISION] class with its citati
 | SD-14 | **«قطاع» is never one dimension.** Service category, government entity mentioned, and beneficiary true industry sector are distinct; the third is unavailable and must be declared so, never inferred from transcripts | [DECISION GF §5-C4, §5-D] | Docs 04, 08, 10, 11 (dimension registry) |
 | SD-15 | **CAP-C5 is literal extraction only** («مجرد استخراج من النص»): government-entity friction output is *mentions in sessions*, never an assessment of an entity's institutional performance — a wording constraint on every renderer and pack | [DECISION GF §5-C5; MP §4-C] | Docs 04, 10, 18 (Arabic copy rules) |
 | SD-16 | **No transcript-provider scope creep**: the platform does not build a meeting bot/recorder without a separate approval; STT-over-audio is a contingency to assess only | [DECISION GF §2.1, §9.4] | Docs 03, 06; OD-12 |
+| SD-17 | **No self-hosted generative models — all generative inference runs on Groq.** The deployment environment is CPU-only (no GPU exists or is planned); the only local models are embeddings, on CPU (ONNX/int8). Consequence: there is no in-environment generative fallback — OD-04 outbound approval is a hard dependency for every transcript-reading capability | [DECISION owner 2026-08-03] | Docs 07 TD-09, 13 §12, 14 §1.6, 16 §9.1, 19 §capacity, 22 ADR-0013/0014, 23 §13 |
 
 **Consequence for document authors:** any package text that (a) proposes correcting transcript text, (b) migrates a legacy finding row, (c) prices a Lane-3 job into refusal, (d) merges the three «قطاع» meanings, or (e) renders CAP-C5 as an entity ranking — contradicts a settled decision and fails review (§14 spine).
 

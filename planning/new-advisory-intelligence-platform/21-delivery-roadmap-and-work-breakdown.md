@@ -584,7 +584,7 @@ All ten experiments [FACT GREENFIELD §21] with the eight mandatory fields. "Own
 ### EXP-04 — Semantic clustering
 - **Hypothesis.** A local multilingual embedding (`BAAI/bge-m3` favoured) + HDBSCAN meets purity ≥ 0.85 with reviewer workload ≤ 15 min per 100 new clusters on QST/CHAL/DEC families; ENT alias resolution reaches ≥ 0.95 recoverable matching.
 - **Sample.** DS-06 gold clusters + DS-07 alias gold (4,372 distinct entity strings [FACT CORE-BRIEF §11]).
-- **Method.** bge-m3 vs multilingual-e5-large vs legacy L12 baseline; per doc 10 §5 pipelines; measure purity, fragmentation, noise share, incremental-assignment stability.
+- **Method.** bge-m3 vs multilingual-e5-large vs legacy L12 baseline; per doc 10 §5 pipelines; measure purity, fragmentation, noise share, incremental-assignment stability, **and CPU-only throughput/latency (ONNX/int8) — the environment has no GPU [DECISION owner 2026-08-03], so corpus-pass wall-clock and single-query encode latency are selection criteria, not footnotes**.
 - **Metric/threshold.** QT-07: purity ≥ 0.85, fragmentation ≤ 1.5, review ≤ 15 min/100 clusters; noise share ≤ 40% (else doc 10 fallback path).
 - **Owner.** MLE; PO approves canonical label protocol ◐OWNER.
 - **Artifact.** Embedding decision memo + calibrated thresholds (NEAR_DUP_COSINE, dispersion bands) in registry.
@@ -619,7 +619,7 @@ All ten experiments [FACT GREENFIELD §21] with the eight mandatory fields. "Own
 - **Owner.** MLE.
 - **Artifact.** Per-backend recall table in `evidence.retrieval_eval`; default-backend registry entry.
 - **Decision unlocked.** Evidence viewer + `search_evidence` tool GA; RAG remains optional and non-numeric (I9) regardless of result.
-- **Fallback if red.** Ship keyword-only with published recall; index/chunking iteration; reranker candidate (bge-reranker-v2-m3) trialled.
+- **Fallback if red.** Ship keyword-only with published recall; index/chunking iteration; reranker candidate (bge-reranker-v2-m3) trialled **offline only — CPU latency excludes interactive reranking [DECISION owner 2026-08-03: CPU-only environment]**.
 
 ### EXP-08 — Deep-analysis job end-to-end
 - **Hypothesis.** A one-month Lane-3 job for a question absent from findings completes with full verifiability and survives kill/resume with zero loss or duplication.

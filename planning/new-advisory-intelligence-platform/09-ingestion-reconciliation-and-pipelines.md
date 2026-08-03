@@ -436,7 +436,7 @@ Observability contract per gate (I16): metric with `gate_id`/`outcome` labels, s
 |---|---|---|---|
 | `ingest_io` | 4 tasks | Adapter runs, DLQ replays | Source rate limits (Read.ai token bucket 80 req/60s inherited from contract [FACT arch/05]) |
 | `enrich_model` | Groq semaphore (§6.2) | Extraction, Lane-3 map/verify calls, taxonomy classification | Provider rate budget |
-| `enrich_cpu` | 2 processes × batch | Embeddings (local — Groq has none [FACT groq-docs 2026-08-02]), clustering, scoring | GPU/CPU |
+| `enrich_cpu` | 2 processes × batch | Embeddings (local — Groq has none [FACT groq-docs 2026-08-02]), clustering, scoring | **CPU-only** (no GPU in the environment [DECISION owner 2026-08-03]) |
 | `resolver` | 2 tasks | Identity ladder runs | DB |
 | `packs` | 1 task | Monthly/quarterly pack builds | Wall-clock window |
 | `maintenance` | 2 tasks | Staleness scanner, retention, TTL cleanup, restore drills | — |

@@ -482,7 +482,7 @@ Planning consequence: online full-pass ≈ one working day at developer tier; en
 | Item | Baseline | Growth ×2 (36 mo) | Notes |
 |---|---|---|---|
 | Evidence units (≈ turns, merged windows) | ~400k | ~1.4M | doc 13 §RAG lifecycle |
-| Embedding pass, bge-m3 1024-dim [REC doc 14/EXP-04] | GPU (L4-class): ~250–400 units/s → 17–27 min full pass; CPU-only: 30–50/s → 2.2–3.7 h | ×3.5 | full re-embed is a scheduled maintenance job; incremental is negligible |
+| Embedding pass, bge-m3 1024-dim [REC doc 14/EXP-04] | **CPU-only (the environment has no GPU and none is planned [DECISION owner 2026-08-03])**: ~30–50 units/s (ONNX/int8, 8 threads) → **2.2–3.7 h full pass** — acceptable because a full re-embed is a scheduled maintenance job; a GPU (L4-class ~250–400 units/s → 17–27 min) would require a new procurement decision | ×3.5 | incremental embedding is negligible |
 | pgvector storage | 400k × 1024 × 4B ≈ 1.6 GB + index ≈ 3–4 GB total | ~12 GB | filter-first exact scan under `RETRIEVAL_EXACT_CAP`; ANN (HNSW) only above cap [DECISION MASTER_PROMPT §7.1]; re-tune index after bulk loads — the legacy ivfflat `lists=100`-forever drift is the pinned lesson [FACT arch/06 §5] |
 | Postgres total | < 25 GB at launch [INFER] | < 80 GB | single instance comfortable; no partitioning needed except audit/serve monthly partitions (doc 08) |
 | MinIO (raw payloads, artifacts, snapshots, backups) | ~10 GB + backup sets | ~40 GB | versioned buckets |
@@ -496,13 +496,13 @@ Planning consequence: online full-pass ≈ one working day at developer tier; en
 | Groq concurrency: serving | effective ≤ 8 in-flight (R16 per-turn caps do the real bounding) | — |
 | Groq concurrency: enrichment | 8 (tunable at runtime) | 429 share > 5% → down; headroom > 0.5 sustained + backlog → up |
 | `DEEP_JOB_CONCURRENCY` | 8 | same rule; never raised during a 429 storm (RB-3) |
-| Embedding service | 1 GPU worker (or 8 CPU threads) | queue depth alert §2.2 |
+| Embedding service | 8 CPU threads (ONNX/int8; no GPU in the environment) | queue depth alert §2.2 |
 | Postgres `max_connections` | 120 (60 app + exporters + superuser reserve) | never raised as a reflex (RB-8) |
 
 ### 8.6 Growth scenarios and revisit triggers
 
 - **×2 volume** (national rollout of advisory programmes): no architectural change; enrichment pool 8→12; Prometheus retention unchanged. Trigger to act: freshness SLO < 0.95 two consecutive weeks with pools maxed.
-- **×5 volume or second corpus** (new session types): move Lane-3/backfill traffic permanently to Batch API windows; consider read replica for `nip_web` (revisit ADR-0003 single-instance); embedding service to dedicated GPU node. Trigger: full-corpus pass > 24h online, or DB > 300 GB, or sustained TPM ceiling at enterprise tier.
+- **×5 volume or second corpus** (new session types): move Lane-3/backfill traffic permanently to Batch API windows; consider read replica for `nip_web` (revisit ADR-0003 single-instance); embedding throughput: a dedicated GPU node becomes a named procurement decision (none exists today). Trigger: full-corpus pass > 24h online, or DB > 300 GB, or sustained TPM ceiling at enterprise tier.
 - Model-side capacity is re-evaluated at every registry change (I17) — a deprecation replacement with lower TPS reruns this section's math as part of the doc 14 switch checklist.
 
 ---

@@ -126,7 +126,7 @@ flowchart TB
         subgraph workrt["Worker runtime (process W1..Wk)"]
             WORKERS["Worker plane<br/>Procrastinate consumers:<br/>ingestion, enrichment, Lane-3 jobs,<br/>packs, retention, schedulers"]
         end
-        EMB["Embedding service<br/>local HTTP, bge-m3 candidate (EXP-04),<br/>CPU baseline / GPU optional"]
+        EMB["Embedding service<br/>local HTTP, bge-m3 candidate (EXP-04),<br/>CPU-only (ONNX/int8) — no GPU in environment"]
     end
 
     subgraph datanode["Data node"]
@@ -484,7 +484,7 @@ Each: **Recommendation → Alternatives → Why it fits this scale/risk → Revi
 - **Recommendation:** One repository, one deployable image, **two runtimes** (web + worker) sharing strictly bounded internal packages; no microservices.
 - **Alternatives:** (a) Microservices per layer — rejected: at ≤50 concurrent users and one team, network boundaries add failure modes and destroy transactional job submission; the legacy's real problems were boundary *discipline*, not deployment granularity. (b) Two repositories (serving vs pipeline) — rejected: the shared vocabulary (envelope types, registries, repository) would drift exactly like the legacy's 8 intent lists (F8). (c) Serverless functions — rejected: 3-hour Lane-3 jobs and a resident embedding model are the workload.
 - **Fit:** Preserves I1 through cheap, checkable mechanisms (roles, import-linter) while keeping one atomic migration stream and one golden suite over the whole truth path.
-- **Revisit trigger:** Sustained need for >3 worker nodes with divergent scaling profiles (e.g., GPU embedding fleet), or a second product team owning a bounded context end-to-end.
+- **Revisit trigger:** Sustained need for >3 worker nodes with divergent scaling profiles (e.g., an embedding fleet following a future GPU-procurement decision — none exists today), or a second product team owning a bounded context end-to-end.
 - **Operational consequences:** One CI pipeline, one versioned release for both planes (workers and web deploy together; queue schema changes are lockstep); import-linter and the §6.3 gates are non-optional CI stages.
 
 ### TD-02 Web framework and API approach
@@ -545,10 +545,10 @@ Each: **Recommendation → Alternatives → Why it fits this scale/risk → Revi
 
 ### TD-09 Embedding and reranking deployment
 
-- **Recommendation:** A **local embedding service** in the worker plane — small internal HTTP service loading the model once (candidate **BAAI/bge-m3**, benchmarked in EXP-04 vs `multilingual-e5-large` and the legacy L12 baseline), CPU with ONNX/int8 baseline, GPU optional; optional reranker (`bge-reranker-v2-m3`) behind the same service if EXP-04 justifies it.
+- **Recommendation:** A **local embedding service** in the worker plane — small internal HTTP service loading the model once (candidate **BAAI/bge-m3**, benchmarked in EXP-04 vs `multilingual-e5-large` and the legacy L12 baseline), **CPU-only with ONNX/int8 — no GPU exists in the target environment and none is planned [DECISION owner 2026-08-03: no self-hosted generative models; embeddings are the only local models, on CPU]**. The optional reranker (`bge-reranker-v2-m3`) is an **offline-only** candidate (clustering/eval passes) — a ~568M cross-encoder on CPU is too slow for the interactive path, so interactive reranking is excluded at launch; EXP-04 measures CPU throughput/latency as a first-class benchmark dimension.
 - **Alternatives:** Hosted embedding APIs (OpenAI/Cohere/Voyage) — rejected: widens the outbound-data surface beyond the OD-04 approval (transcript text would leave the environment for a *retrieval* concern) and adds a provider dependency for a capability that runs fine locally. Groq — offers no embedding models [FACT groq-docs 2026-08-02]. In-process embedding inside each worker — rejected: N model copies in RAM and the legacy's event-loop-blocking lesson.
 - **Fit:** Corpus embedding is an offline batch (≈400k turns; re-runs only on model change or rebase); query-time load is one short text per evidential question. Data residency: retrieval text never leaves the environment — state this benefit explicitly in doc 16.
-- **Revisit trigger:** Re-embed wall-clock >24h on CPU after a rebase (add GPU); EXP-04 shows a hosted model materially better AND OD-04 explicitly approves that flow (unlikely to be worth it).
+- **Revisit trigger:** Re-embed wall-clock >24h on CPU after a rebase — a GPU procurement would then become a **new named owner decision** (none exists today); or EXP-04 shows a hosted model materially better AND OD-04 explicitly approves that flow (unlikely to be worth it).
 - **Operational consequences:** Model files vendored into the image/artifact store (no runtime HuggingFace pulls on the gov network — the CDN lesson generalized); health endpoint + p95 metrics; version pinned in the model registry (I17 applies to embeddings too); 300ms timeout + fallback behaviour per §9.5.
 
 ### TD-10 Observability stack (→ ADR-0019)

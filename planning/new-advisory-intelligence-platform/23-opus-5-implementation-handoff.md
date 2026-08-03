@@ -31,6 +31,7 @@ The parallel-authoring drift these rows resolve was **normalized across the pack
 | Registry data vs loader | YAML data at repo root `registry/`; Python loader package `nwafeth/registry/` | doc 04 §1.1 "registry/capabilities/" = the data dir |
 | Doc 08 census | **78 tables** incl. `serve.capability_registry` + `serve.capability_paraphrase` (DDL doc 04 §1.3, migration 0009) and `evidence.custom_collection` + `evidence.custom_collection_unit` (DDL doc 13 §9.0, migration 0010) | doc 08 §1 briefly said "74 tables" before absorbing them |
 | EXP-03 harness home | EPIC-06 here (= P0 *deliverable* 12) | doc 21 P2 prerequisite briefly cited a nonexistent epic "P0-E12" |
+| Compute posture | **CPU-only environment; all generative inference on Groq; embeddings are the only local models (CPU, ONNX/int8); reranker offline-only** [DECISION owner 2026-08-03; SD-17 doc 02] | earlier drafts carried "GPU optional" and an "on-prem OSS fallback if OD-04 fails" — both removed 2026-08-03 |
 
 ---
 
@@ -688,6 +689,7 @@ Structural prohibitions. Each cites its authority; several are also mechanically
 18. **MUST NOT expose raw exceptions to users or return 200 on failure** — RFC 7807 + reason codes + `system_state` are the only failure surfaces (I16; doc 17 §0).
 19. **MUST NOT depend on parallel tool calls or more than one tool decision per model turn** (doc 14 §5; GREENFIELD §10.5).
 20. **MUST NOT begin an epic whose "blocked by" list is unsatisfied**, even when locally convenient — the order encodes gate dependencies, not preference (§5).
+21. **MUST NOT introduce a GPU-dependent component or a self-hosted generative model** — the environment is CPU-only and all generative inference goes through the single Groq client; the only local models are CPU embeddings (ONNX/int8), and the reranker runs offline only [DECISION owner 2026-08-03; SD-17 doc 02].
 
 ## 14. Cross-index — where to look things up
 

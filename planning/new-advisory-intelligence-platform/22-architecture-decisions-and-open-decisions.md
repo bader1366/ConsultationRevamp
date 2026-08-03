@@ -215,7 +215,7 @@ All twenty ADRs carry status **recommended-for-acceptance**: they are planning r
 Every call logs model id, prompt sha, tokens, cost, latency (I17); a deprecation notice creates an ops task with replay evaluation before any swap.
 **Alternatives considered.**
 - *Multi-provider abstraction now* — rejected: the registry IS the abstraction; a second provider is a registry row + client adapter when actually needed, and the owner decision names Groq.
-- *Self-hosted large open models* — rejected: GPU procurement in the approved environment is its own programme; becomes the escalation path only if OD-04 fails.
+- *Self-hosted large open models* — **rejected outright [DECISION owner 2026-08-03: no self-hosted generative models; the environment is CPU-only with no GPU and none planned]**. If OD-04 fails there is no standing local fallback: the escalation is a KSA-region/sovereign Groq option or a *new* GPU-procurement programme decision (doc 16 §9.1).
 - *Keep llama-3.3-70b hoping for enterprise tier* — rejected: the plan must not depend on unverified tier status (OD-03).
 **Consequences.**
 - Strict-schema requirements shape all extraction schemas (all fields `required`, `additionalProperties: false`).
@@ -232,7 +232,7 @@ Every call logs model id, prompt sha, tokens, cost, latency (I17); a deprecation
 - *ANN-first (HNSW everywhere)* — rejected at this scale: exact scan under filters is auditable and recall-perfect; ANN is an admitted optimization above the cap, with its recall delta published.
 - *RAG as an answer source* — rejected by I9, categorically.
 **Consequences.**
-- A worker-plane sizing question (bounded: bge-m3 is CPU-viable at our throughput; GPU optional).
+- A worker-plane sizing question (bounded: bge-m3 is CPU-viable at our throughput — ~2.2–3.7 h full-corpus pass on 8 CPU threads, doc 19 §capacity; **CPU-only by owner decision 2026-08-03, no GPU**).
 - Index rebuilds are routine derived-data operations — the index is disposable by design.
 - Retrieval quality is measured per backend (QT-09); an unmeasured backend cannot be default [DECISION MASTER_PROMPT §11].
 **Revisit trigger.** EXP-04/EXP-07 pin the model and backend; corpus > ~5M evidence units → ANN default with published recall delta.

@@ -872,7 +872,7 @@ sequenceDiagram
 ## 12. Open items and revisit triggers
 
 - **OD-23 (registered in doc 22):** visibility of Lane-3 artifacts and custom collections — requester-private vs role-shared. Working assumption: role-shared aggregates; quotes gated by transcript permission (§9.6).
-- **OD-04:** outbound pseudonymized transcript text to Groq — the map stage depends on it; blocked ⇒ Lane 3 waits on an in-environment model (doc 14 contingency).
+- **OD-04:** outbound pseudonymized transcript text to Groq — the map stage depends on it. **If blocked, Lane-3's map stage cannot run at all**: no in-environment generative capability exists and none is planned [DECISION owner 2026-08-03: no self-hosted models; CPU-only environment]. OD-04 is therefore a hard dependency for every transcript-reading capability; the escalation paths are a KSA-region/sovereign Groq option or a new GPU-procurement programme decision (doc 16 §9.1).
 - **OD-08:** artifact/collection retention defaults (180d / 90d assumed here).
 - Revisit triggers: `DEEP_JOB_CONCURRENCY` after EXP-08 rate-limit measurement; `CANON_ATTACH_MIN` and eval gates after EXP-04 embedding selection; micro-batching only after the leakage test passes; promotion thresholds after two quarters of real recurrence data (doc 21 checkpoint).
 
