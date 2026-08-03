@@ -151,7 +151,7 @@ Additionally from the review pass: doc 07 §6.2's grant sketch was subordinated 
 
 ## 5. Decisions requiring owner approval
 
-The register of record is doc 22 §5; doc 01 §8 renders it in Arabic for leadership. Reproduced here in full so this index is self-sufficient at the approval meeting. Classes: **G1** blocks implementation start · **G2** blocks a named phase gate · **G3** policy confirmation that can trail on the recorded safe assumption.
+The register of record is doc 22 §5; doc 01 §8 renders it in Arabic for leadership. Reproduced here in full so this index is self-sufficient at the approval meeting. Classes: **G1** blocks implementation start · **G2** blocks a named phase gate · **G3** policy confirmation that can trail on the recorded safe assumption. **Umbrella precondition (2026-08-04):** before any row of this table can operate, the owner must approve this amended package revision itself — that approval is gate item 0 in §6 [DECISION owner 2026-08-03, Amendment §0.2].
 
 | # | Decision | Artifact to sign | Class | Blocks | Owner role |
 |---|---|---|---|---|---|
@@ -180,8 +180,11 @@ Reading the table: only rows 1 and 20 gate the *start*; rows 4–8 and 10 gate *
 
 ## 6. Implementation start gate — what must be true before Opus 5 begins
 
-Implementation (doc 23 EPIC-01) may start when ALL of the following hold [REC — restating doc 22 §5's gate with doc 21's scheduling consequences]:
+**The gate changed on 2026-08-04** [DECISION owner 2026-08-03, Amendment §0.2, §12-00, §15]: **no product code is written until this amended package revision (2026-08-04, integrating the 2026-08-03 Owner Amendment) is owner-approved** — approval of the pre-amendment package does not count. And what starts after approval is not the epic backlog: **the first executable order is VS-00 only** (walking skeleton, doc 25), followed by a mandatory stop — demo, acceptance-test run, gap record, owner approval — **before VS-01** (SD-18; doc 25 owns the protocol; doc 23 enforces "no automatic next task"). EPIC-01's content executes inside VS-00 as re-scoped by doc 25.
 
+Implementation (VS-00 per doc 25; ticket detail in doc 23) may start when ALL of the following hold [REC — restating doc 22 §5's gate with doc 21's scheduling consequences]:
+
+0. **Approved: this amended package revision** (the PLAN_CHANGELOG §9 verification checklist run and accepted by the owner). This precedes every other item.
 1. **Signed:** approval item 1 (ADRs, en bloc or with itemized exceptions recorded in doc 22) and item 20 (OD-01 environment + OD-02 IdP/secrets named). Without these there is nowhere to deploy and no login to build against.
 2. **Filed with named owners and tracking IDs (answers may trail on safe assumptions):** the OD-04 outbound-approval file (with the doc 16 §4 matrix attached), the OD-19 Groq DPA request, the **OD-13 second Read.ai OAuth client request** (long lead; sharing the legacy token breaks both systems — token rotates on refresh), the **OD-07 internal-data access request** with proposed freshness SLA, and the OD-25 provider-candidate shortlist + trial-account procurement. These are P0 deliverable 9 in doc 21; filing them is engineering-independent and must not wait for code.
 3. **Early-closure watchlist:** OD-13 and OD-07 must close before P1 live ingestion (else P1 exits in snapshot-only mode, flagged as a P6 risk); **OD-04 must close before the P2 full-corpus backfill** (else extraction runs only on the compliance-permitted staging subset). Doc 21 tracks each with an escalation rule (doc 22 §6.5).
@@ -189,40 +192,43 @@ Implementation (doc 23 EPIC-01) may start when ALL of the following hold [REC �
 5. **The consistency pass of §4's editorial-debt list is executed** (the seven §4 items: three OD remaps + six reconciliations, plus the 2026-08-03 second pass OD-26/OD-27), so Opus 5 never has to adjudicate an ID collision mid-build.
 6. **Snapshot logistics agreed:** the legacy-side snapshot (SRC-SNAP) extraction window and checksum handover are booked (doc 20 §1.2) — P0-E8 is on the critical path.
 
-What does **not** block the start: any G3 item; the OD-06 provider decision; EXP-02 results; Groq account-tier confirmation (OD-03 — nothing depends on it); BI tooling (OD-22). The recorded safe assumptions carry all of them [FACT doc 22 §3.2].
+What does **not** block the start: any G3 item; the OD-06 provider decision; EXP-02 results; Groq account-tier confirmation (OD-03 — nothing depends on it); BI tooling (OD-22); **every OD-28…OD-35 (each carries a §13 safe assumption)**; **Wave B/C backlog items — they are a standing consultation list (SD-21), never a start condition**. The recorded safe assumptions carry all of them [FACT doc 22 §3.2].
 
 ### 6.1 The gate as a one-screen checklist
 
 ```text
 IMPLEMENTATION START GATE — Nwafeth Intelligence
+[ ] AMENDED PACKAGE REVISION (2026-08-04) APPROVED ......... Platform owner   (PLAN_CHANGELOG §9)
 [ ] ADR-0001…0020 accepted (en bloc / itemized) ............ Platform owner   (doc 22 §2)
 [ ] OD-01 environment + OD-02 IdP/secrets named ............ IT + security    (doc 22 §3.2)
 [ ] OD-04 outbound-approval file FILED (matrix attached) ... Compliance       (doc 16 §4)
 [ ] OD-19 Groq DPA request FILED ........................... Owner + legal
 [ ] OD-13 second Read.ai OAuth client REQUESTED ............ Platform owner   (long lead!)
-[ ] OD-07 internal-data access REQUESTED + SLA proposed .... Internal systems
+[ ] OD-07 internal-data access REQUESTED + SLA proposed .... Internal systems (now incl. SRC-DATAHUB sub-feeds)
 [ ] OD-25 provider shortlist + trial accounts REQUESTED .... Procurement
 [ ] OD-12 audio-legality question ASKED (EXP-02 design) .... Legal
 [ ] OD-24 annotator commitment (~45 h/month) CONFIRMED ..... Product owner
 [ ] EXP-01 booked inside P0 (snapshot); EXP-02 deps secured for P1
 [ ] Consistency pass done (7 editorial debts of §4) ........ Package steward
 [ ] Legacy snapshot extraction window BOOKED ............... Owner + DE       (doc 20 §1.2)
-→ ALL CHECKED ⇒ Opus 5 begins at doc 23 EPIC-01.
+→ ALL CHECKED ⇒ Opus 5 executes VS-00 ONLY (doc 25; EPIC-01 content re-scoped inside it),
+  then STOPS: demo + acceptance report + gap record + owner approval BEFORE VS-01.
 ```
 
 ## 7. Package at a glance (orientation numbers)
 
-24 documents (2 Arabic-first, 22 English with Arabic labels) · **26 committed capabilities** (16 committed questions A1–C8 + 10 D-family additions) · **18 invariants** I1–I18, each with a named structural enforcement (doc 23 §2) · **20 ADRs** recommended-for-acceptance · **25 open decisions** with safe assumptions (next free: OD-26) · **12 labelled datasets** DS-01…12 (~710 h launch labelling) · **17 test families** T-01…17 · **8 hard gates** + **12 quantitative targets** · **10 experiment gates** EXP-01…10 · **8 delivery phases** P0–P7 (~175–260 engineer-weeks across phases [INFER doc 21 sums]) · **11 database schemas**, ~78 tables at launch · **1** legacy artifact ever crossing the boundary (the checksummed snapshot) · **0** model-authored numbers, ever.
+26 documents (2 Arabic-first, 24 English with Arabic labels) + 2 amendment-tracking files (PLAN_CHANGELOG, TRACEABILITY_OWNER_AMENDMENTS) · **26 committed capabilities** (16 committed questions A1–C8 + 10 D-family additions) **+ 12 operational capabilities CAP-OPS-01…12** · **50 backlog items** PB-001…018 / PB-101…120 / PB-201…212 in release waves Wave A/B/C · **18 invariants** I1–I18, each with a named structural enforcement (doc 23 §2) · **22 settled owner decisions** SD-01…SD-22 · **20 ADRs** recommended-for-acceptance · **35 open decisions** with safe assumptions (next free: OD-36) · **12 labelled datasets** DS-01…12 (~710 h launch labelling), extended by the detector-learning datasets (versioned, doc 15) · **17 test families** T-01…17 + per-slice acceptance suites (doc 25) · **8 hard gates** + **12 quantitative targets** · **11 experiment gates** EXP-01…11 · **8 dependency phases** P0–P7 (~175–260 engineer-weeks across phases [INFER doc 21 sums]) executed through **13 vertical slices** VS-00…VS-12 with owner stop-accept gates · **11 database schemas**, 78 tables at the pre-amendment census + the Amendment §12 entity additions (doc 08 owns the census) · **1** legacy artifact ever crossing the boundary (the checksummed snapshot) · **0** model-authored numbers, ever.
 
-**Ready-to-hand-off statement:** with §6.1–§6.2 satisfied, the package is sufficient for Opus 5 to implement from doc 23 without rediscovery — every schema, contract, threshold, prompt skeleton, and gate is specified in the documents mapped above; every unresolved item has a registered owner and a safe assumption [INFER — the GREENFIELD §25(8) closing statement, maintained by the doc 22 register].
+**Ready-to-hand-off statement:** with §6 satisfied — beginning with owner approval of this amended revision — the package is sufficient for Opus 5 to implement from doc 25's VS-00 onward (ticket detail in doc 23) without rediscovery — every schema, contract, threshold, prompt skeleton, and gate is specified in the documents mapped above; every unresolved item has a registered owner and a safe assumption [INFER — the GREENFIELD §25(8) closing statement, maintained by the doc 22 register].
 
 ## 8. Package-wide conventions (for any new reader)
 
-- **IDs:** capabilities `CAP-A1…CAP-D10` (+ future promoted `CAP-E…`); invariants `I1…I18`; experiments `EXP-01…10`; architecture decisions `ADR-0001…0020`; open decisions `OD-01…OD-27` (next free: OD-28); method rules `MR-01…16`; datasets `DS-01…12`; tests `T-01…17`; hard gates `HG-1…8`; targets `QT-01…12`; violation seeds `VIOL-001…008`; screens `SCR-01…13`; phases `P0…P7`; sources `SRC-*`.
-- **Claim tags:** `[FACT src]` source-derived · `[DECISION]` owner decision · `[REC]` recommendation with alternatives + revisit trigger · `[INFER]` inference · `[ASSUME OD-xx]` assumption bound to a registered open decision. Bare "TBD" does not appear in this package.
+- **IDs:** capabilities `CAP-A1…CAP-D10` (+ future promoted `CAP-E…`) and operational capabilities `CAP-OPS-01…12`; invariants `I1…I18`; settled decisions `SD-01…SD-22`; experiments `EXP-01…11`; architecture decisions `ADR-0001…0020`; open decisions `OD-01…OD-35` (next free: OD-36); method rules `MR-01…16`; datasets `DS-01…12`; tests `T-01…17`; hard gates `HG-1…8`; targets `QT-01…12`; violation seeds `VIOL-001…008`; screens `SCR-01…22` (SCR-08 = «اشتباه مخالفة», upgraded 2026-08-04); backlog items `PB-001…018 / PB-101…120 / PB-201…212`; phases `P0…P7`; vertical slices `VS-00…VS-12`; exposure levels `L0…L3`; release waves `Wave A / Wave B / Wave C` (**never** "P0/P1/P2" — those are phase names; CON-33); sources `SRC-*` including the `SRC-DATAHUB` family (-SESSION/-BENEFICIARY-EVAL/-CONSULTANT-EVAL/-OUTCOME/-DIRECTORY/-REFERENCE).
+- **Exact operational names (2026-08-04):** feature flags `session_360_enabled`, `violation_review_enabled`, `nightly_consolidation_enabled`, `monthly_infographic_enabled`, `action_center_enabled`, `lane1_agent_enabled`, `lane3_analysis_enabled` · nightly run states `queued → running → partial → succeeded → failed → cancelled → superseded` · ops metrics `review_backlog_age`, `data_completeness`, `source_join_rate`, `action_completion_rate`, `detector_acceptance_rate`, `suspected_cases_open`, `nightly_run_success` (registry: doc 11).
+- **Claim tags:** `[FACT src]` source-derived · `[DECISION]` owner decision (amendment decisions cite `[DECISION owner 2026-08-03, Amendment §x]`) · `[REC]` recommendation with alternatives + revisit trigger · `[INFER]` inference · `[ASSUME OD-xx]` assumption bound to a registered open decision. Bare "TBD" does not appear in this package.
 - **Schemas:** `ingest, core, transcript, findings, tax, serve, jobs, packs, evidence, ops, legacy_snapshot` (CORE-BRIEF §6). Reason codes: the closed 16-value enum of CORE-BRIEF §4. Lanes: 0 deterministic · 1 bounded agent · 2 clarification/honest boundary · 3 deep analysis.
-- **Language:** «قطاع» is always disambiguated into `service_category` / `government_entity` / `business_sector`; periods are end-exclusive; rates per 100 sessions; n≥30 with Wilson intervals; quotes always carry the full 8-field provenance tuple.
+- **Language:** «قطاع» is always disambiguated into `service_category` / `government_entity` / `business_sector`; periods are end-exclusive; rates per 100 sessions; n≥30 with Wilson intervals; quotes always carry the full 8-field provenance tuple; suspected violations are never rendered as confirmed — leadership numbers use approved-only, with queue size as its own separate figure (SD-19/SD-20).
 
 ---
 
-*End of document 00. Leadership: continue to doc 01. Engineers: continue to doc 23.*
+*End of document 00. Leadership: continue to doc 01, then docs 24/25. Engineers: continue to doc 25, then doc 23. This revision: PLAN_CHANGELOG (what changed) · TRACEABILITY_OWNER_AMENDMENTS (requirement coverage).*

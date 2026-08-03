@@ -1,14 +1,14 @@
 # 02 — Source Map and Contradiction Log
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** none (this is the evidence foundation) · **Feeds:** 00, 01, 03–23 (every document cites this one for source facts, resolved contradictions, and baseline numbers)
-**Sources used:** GREENFIELD §1–§2, §5–§7, §24–§25; MASTER_PROMPT §2 (live 2026-08-02 ground truth), §3, §4, §4.4, §5, §12, §13.8–13.9, Appendices A–C, E; arch/01–08 (full scan; spot-verified against originals: arch/02 §7 FK audit, arch/07 F14/§7-Q10)
+**Status:** Draft for owner review · amended per the Owner Amendment 2026-08-03 · **Date:** 2026-08-02 (amended 2026-08-04) · **Author:** Planning package (Fable 5)
+**Depends on:** none (this is the evidence foundation) · **Feeds:** 00, 01, 03–25, PLAN_CHANGELOG, TRACEABILITY_OWNER_AMENDMENTS (every document cites this one for source facts, resolved contradictions, and baseline numbers)
+**Sources used:** GREENFIELD §1–§2, §5–§7, §24–§25; OWNER-AMENDMENT (2026-08-03) in full; MASTER_PROMPT §2 (live 2026-08-02 ground truth), §3, §4, §4.4, §5, §12, §13.8–13.9, Appendices A–C, E; arch/01–08 (full scan; spot-verified against originals: arch/02 §7 FK audit, arch/07 F14/§7-Q10)
 
 ---
 
 ## 0. Purpose, method, and citation discipline
 
-This document is the **required source-analysis pass** of GREENFIELD §1.2: an evidence map for every attached source, a contradiction log with each conflict resolved, an obsolete-mechanisms register, the settled decisions carried forward, and the assumptions extracted into Open Decision IDs. Every other document in this package cites facts **through** this document rather than re-deriving them, so that a stale number or a refuted premise is corrected in exactly one place.
+This document is the **required source-analysis pass** of GREENFIELD §1.2: an evidence map for every attached source, a contradiction log with each conflict resolved, an obsolete-mechanisms register, the settled decisions carried forward, and the assumptions extracted into Open Decision IDs. Every other document in this package cites facts **through** this document rather than re-deriving them, so that a stale number or a refuted premise is corrected in exactly one place. As of 2026-08-04 it also registers the **OWNER-AMENDMENT of 2026-08-03** as a prescriptive source (§1.11), records its decisions as SD-18…SD-22 (§4), resolves its conflicts with pre-amendment package text as CON-30…CON-34 (§2 Tier 3), and extracts its working assumptions into OD-28…OD-35 (§5.1).
 
 ### 0.1 The two precedence ladders (never mixed) [FACT GREENFIELD §1.1]
 
