@@ -1,7 +1,7 @@
 # 19 — Observability, Operations, and Disaster Recovery
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
 **Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 07 (runtimes, roles, pools), 08 (schemas, `ops.*`), 09 (pipeline states, reconciliation), 12 (lanes, budgets, circuit breaker), 13 (Lane-3 job model), 14 (model registry), 16 (audit, retention, PII), 17 (`/healthz`, `/readyz`, `system_state`) · **Feeds:** 20 (cutover gates read these dashboards), 21 (ops work packages), 22 (ADR-0019/0020, OD-22), 23 (implementation order)
+**Depends on:** 07 (runtimes, roles, pools), 08 (schemas, `ops.*`), 09 (pipeline states, reconciliation), 12 (lanes, budgets, circuit breaker), 13 (Lane-3 job model), 14 (model registry), 16 (audit, retention, PII), 17 (`/healthz`, `/readyz`, `system_state`) · **Feeds:** 20 (cutover gates read these dashboards), 21 (ops work packages), 22 (ADR-0019/0020, OD-26), 23 (implementation order)
 **Sources used:** GREENFIELD §17 (fully), §2.5, §15.4, §16.1; MASTER_PROMPT §6 R13/R14/R16, §5.3; arch/06 §5–§7 (backup/migration/ops reality); arch/08 ISS-05/06/12/14/17; CORE-BRIEF §8 (stack), §11 (baselines), §12 (defect pins)
 
 ---
@@ -246,7 +246,7 @@ Event classes with fixed `ctx` schemas (registered in `ops.log_event_catalogue` 
 
 ### 3.3 R13 reasoning log — the per-turn record
 
-[DECISION MASTER_PROMPT §6 R13, carried forward] Persisted as rows (`serve.turn` + `serve.tool_call` + `serve.verifier_result`, doc 08 §8), not as log lines; log lines carry the ids. Full field list the serving plane must persist per turn:
+[DECISION MASTER_PROMPT §6 R13, carried forward] Persisted as rows (`serve.conversation_turn` + `serve.tool_call` + `serve.verifier_result`, doc 08 §8), not as log lines; log lines carry the ids. Full field list the serving plane must persist per turn:
 
 | Field group | Fields |
 |---|---|
@@ -263,7 +263,7 @@ Event classes with fixed `ctx` schemas (registered in `ops.log_event_catalogue` 
 
 Scenario: an analyst reports «الرقم غير صحيح في سؤال الأمس عن نسبة الخطوات الواضحة» with the UI footer code `01J4XW9K…`.
 
-1. `serve.turn WHERE request_id = '01J4XW9K…'` → the full R13 row: normalised question, resolved period `[2026-07-01, 2026-08-01)`, lane 0, CAP-B1, spec, SQL fingerprint, verifier verdicts, answer artifact id. *(No transcript text, no beneficiary identity touched.)*
+1. `serve.conversation_turn WHERE request_id = '01J4XW9K…'` → the full R13 row: normalised question, resolved period `[2026-07-01, 2026-08-01)`, lane 0, CAP-B1, spec, SQL fingerprint, verifier verdicts, answer artifact id. *(No transcript text, no beneficiary identity touched.)*
 2. Grafana → Tempo trace `trace_id` from the same row → per-stage latency; Loki `{env="prod"} | json | request_id="01J4XW9K…"` → every log event including the compiled-spec validation.
 3. The number itself: `serve.answer_artifact` → `metric_results[]` with `allowed_literals` and the `sql_fingerprint`; re-execute the *registered* spec via the replay harness (doc 15) against the same period → byte-identical number or a real data drift (then `ingest.reconciliation_result` explains what changed and when).
 4. If a quote is disputed: artifact carries `(meeting_ulid, turn_index, source, source_version)`; the reviewer role fetches the turn via the governed transcript window endpoint — that access itself lands in `nip_plat_sensitive_evidence_access_total` and `ops.audit_event`.
@@ -314,7 +314,7 @@ The user-facing CAP-D9 capability reads the same governed queries as D5 [DECISIO
 
 [REC] Grafana Alertmanager routes by label `team`: `ops` (SEV-1/2 infra+serving) → on-call channel + email; `steward` (queues, DQ, PII review) → steward group; `ml` (model drift, schema failures, deprecations) → eng lead; `owner` (pack deadline, unsigned capability, spend report) → product owner. Every SEV-1/2 alert names its runbook id (`runbook: RB-3`) in the annotation — an alert without a runbook link fails the dashboards-as-code CI check.
 
-**[ASSUME OD-22 — new]** On-call staffing and notification channels inside the government network (SMS/Teams-equivalent/email; whether a 24/7 rotation exists at pilot). Safe working assumption: **business-hours on-call by a 2-person ops rotation, notifications via approved email + the authority's messaging platform; out-of-hours SEV-1 auto-degrades the platform to safe states (circuit to Lane 0, queue pause) rather than assuming a human is awake.** Impact: §6 degraded-state design is sized for unattended nights; doc 21 staffing. Owner: platform owner.
+**[ASSUME OD-26 — new]** On-call staffing and notification channels inside the government network (SMS/Teams-equivalent/email; whether a 24/7 rotation exists at pilot). Safe working assumption: **business-hours on-call by a 2-person ops rotation, notifications via approved email + the authority's messaging platform; out-of-hours SEV-1 auto-degrades the platform to safe states (circuit to Lane 0, queue pause) rather than assuming a human is awake.** Impact: §6 degraded-state design is sized for unattended nights; doc 21 staffing. Owner: platform owner.
 
 ### 5.3 Alert rule sketches (PromQL-shaped, illustrative not production code)
 
@@ -609,7 +609,7 @@ Three snapshot classes, one rule each:
 
 | ID | Decision needed | Safe working assumption | Impact if changed |
 |---|---|---|---|
-| **OD-22 (new, §5.2)** | On-call staffing + notification channels in the gov network; 24/7 vs business hours | business-hours 2-person rotation; nights covered by automatic safe degradation (circuit, queue pause) | alert routing config; §6 degraded-state depth; doc 21 staffing |
+| **OD-26 (new, §5.2)** | On-call staffing + notification channels in the gov network; 24/7 vs business hours | business-hours 2-person rotation; nights covered by automatic safe degradation (circuit, queue pause) | alert routing config; §6 degraded-state depth; doc 21 staffing |
 | OD-01 | Deployment target; existence of a secondary approved zone | container platform, approved environment; full-site DR best-effort until second zone confirmed | §10.1 site-loss row becomes a commitment; MinIO mirror target |
 | OD-03 | Groq account tier | developer tier (300k TPM class) | §8.3 full-pass math compresses ~3×; §2.2 headroom thresholds |
 | OD-08 | Retention windows | Loki 90d; R13/audit ≥ 18 mo; monthly fulls 18 mo | §3.5, §9.1 tables |

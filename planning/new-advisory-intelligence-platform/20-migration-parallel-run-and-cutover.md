@@ -1,7 +1,7 @@
 # 20 — Migration, Parallel Run, and Cutover
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
 **Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 05 (snapshot contract §9, source contracts), 06 (rebase, provider strategy), 08 (`legacy_snapshot` §13, core DDL), 09 (ingestion, reconciliation, resolver), 10 (re-derivation methodology), 15 (golden suite as gate evidence), 16 (PII classes, audit), 17 (API surface the replay harness drives), 19 (dashboards/drills as gate evidence) · **Feeds:** 21 (roadmap phases), 22 (ADR-0016, OD-13/OD-23), 23 (implementation order)
+**Depends on:** 05 (snapshot contract §9, source contracts), 06 (rebase, provider strategy), 08 (`legacy_snapshot` §13, core DDL), 09 (ingestion, reconciliation, resolver), 10 (re-derivation methodology), 15 (golden suite as gate evidence), 16 (PII classes, audit), 17 (API surface the replay harness drives), 19 (dashboards/drills as gate evidence) · **Feeds:** 21 (roadmap phases), 22 (ADR-0016, OD-13/OD-27), 23 (implementation order)
 **Sources used:** GREENFIELD §19 (fully), §2.3, §1.3, §9.2; MASTER_PROMPT §13.8 (snapshot mechanics, Read.ai credential constraint, ingestion ownership), §13.9 (parity doctrine); CORE-BRIEF §10 OD-13, §11 baselines, §12 defect pins; arch/06 §5–6 (legacy corpus reality)
 
 ---
@@ -14,7 +14,7 @@ This document plans the only sanctioned path from the legacy system to NIP: **on
 2. **[DECISION MASTER_PROMPT §13.8]** The snapshot contains the **raw and authoritative layers only**. Derived findings (~409k legacy knowledge rows) are **never migrated** — they were classified under a fixed vocabulary chosen before anyone looked at the data, and the violations table alone carries 3,103 exact duplicate rows inflating counts up to ~1.84× [FACT arch/06 §7.14]. NIP re-derives everything under the new versioned taxonomy and pipeline.
 3. **[DECISION MASTER_PROMPT §13.8, verified `token_manager.py:154,163`]** Read.ai rotates the refresh token on every refresh. A shared credential means whichever system refreshes second presents a dead token — both break, intermittently, untraceably. NIP gets **its own OAuth client (OD-13), requested in week 1** because provider lead time blocks the pilot gates.
 4. **[DECISION MASTER_PROMPT §13.9]** Parity is compared only on a **pinned common basis**: closed pre-snapshot periods, capabilities with a 1:1 taxonomy crosswalk. Where the legacy answer is known wrong, parity is *expected to fail in a stated direction* — generic parity is never the acceptance bar.
-5. **[DECISION GREENFIELD §19.4]** The legacy system keeps running throughout and **is not retired by this plan**. The end state is *containment* of its analytical routes (G5), not decommissioning; decommissioning is its owners' separate decision (OD-23).
+5. **[DECISION GREENFIELD §19.4]** The legacy system keeps running throughout and **is not retired by this plan**. The end state is *containment* of its analytical routes (G5), not decommissioning; decommissioning is its owners' separate decision (OD-27).
 6. **[DECISION GREENFIELD §1.3]** Every count in this document is a planning baseline measured 2026-08-02; the snapshot **manifest** produced at snapshot time is the authority for reconciliation, and the committed measurement script re-measures before any number reaches stakeholders. (Live example of why: the services report grew from 83,325 rows on 2026-07-16 [FACT arch/06 §6] to 94,963 on 2026-08-02 [FACT CORE-BRIEF §11] — the legacy corpus moves.)
 
 ```mermaid
@@ -108,7 +108,7 @@ The artifact is **P3-bearing** (era-1 titles embed consultant national IDs; serv
 1. Encrypted at rest from the moment of creation (`age`/GPG to NIP's transfer key; private key in NIP's vault only).
 2. Transferred over the approved channel [ASSUME OD-01 network topology]; never via personal devices or e-mail; both ends verify `sha256` before and after transfer; verification events recorded as `ops.audit_event(action='snapshot_transfer')` on the NIP side and a signed receipt on the legacy side.
 3. Decrypted only inside the NIP environment at restore time; the plaintext dump is deleted after restore verification (the encrypted WORM copy is the retained artifact).
-4. `legacy_snapshot` gets the most restrictive grants in the database: `nip_web` has **zero** grants; `nip_worker` read-only; restore/migration runs under a dedicated `nip_bootstrap` role dropped after G0 [DECISION doc 08 §13].
+4. `legacy_snapshot` gets the most restrictive grants in the database: `nip_web` has **zero** grants; `nip_worker` read-only; restore/migration runs under a dedicated `nip_bootstrap` role created for the bootstrap window and dropped after G0 [REC — doc 20-owned role, deliberately absent from the standing role inventory of doc 07 §6.2 / doc 16 §2.4; created and dropped by the bootstrap migration itself].
 5. P3 columns with no crosswalk purpose are **never selected** into `core` (they stay behind `legacy_snapshot`'s grants until disposal) [REC doc 05 §9]; the two standing P3 columns in `core` are exactly those documented in doc 16 §3 [ASSUME OD-14].
 
 ### 1.4 Restore into `legacy_snapshot`
@@ -294,7 +294,7 @@ While NIP has no live ingestion (§2), the corpus is refreshed by re-snapshot: *
 |---|---|---|---|
 | Build (pre-G0 → G1) | **Legacy only** | monthly re-snapshot (§1.10) | second credential not yet live; lag irrelevant against history; parity questions are closed-period anyway |
 | Pilot (G2 entry onward) | **Both — on separate OAuth clients** | live (T+24h SLA, doc 05 §11) | dual running is safe **only** with independent credentials (principle 3); NIP warms its ingestion ≥ 4 weeks before month-close pilot |
-| Production default (G4+) | Both (NIP primary; legacy continues for its own users until G5/OD-23) | live | I10 both directions — neither is the other's dependency |
+| Production default (G4+) | Both (NIP primary; legacy continues for its own users until G5/OD-27) | live | I10 both directions — neither is the other's dependency |
 
 ### 2.2 NIP's own Read.ai OAuth client — OD-13, the long-lead item
 
@@ -475,7 +475,7 @@ Roles: **gate owner** decides pass/fail with the named evidence; product owner s
 | **G2** | Operational pilot (month-close) | + service owners | G1 exit; **OD-13 credential live + dual ingestion warmed ≥ 4 weeks**; OD-07 feed live; join-rate KPIs ≥ doc 05 §10.2 targets on the live cohort; freshness SLO ≥ 0.95 (doc 19) | **two consecutive month-closes** where B1–B5 outputs are produced from NIP, reviewed via the doc 18 workflows (incl. B4 violation review in anger), and formally accepted by the service owner alongside legacy outputs; parity FAIL streak = 0 | month-close ownership reverts to legacy outputs; NIP stays in shadow; ingestion keeps running (no data loss on rollback) |
 | **G3** | Executive pack pilot | + limited executive group | G2 exit; pack pipeline + sign-off chain live (OD-10); taxonomy VIOL/CHAL/SAT at version ≥ 1 with approved answer keys (unsigned-capability metric = 0, doc 19 §2.5) | one monthly + one quarterly pack published, signed, distributed, **zero retractions**; executive feedback incorporated or ticketed | pack superseded/retracted per packs doctrine (never edited); exec reporting reverts to legacy channel |
 | **G4** | Production default | all user groups | G1–G3 exits; EXP-10 adversarial/security tests passed (doc 15/16); DR drill within last 90d; ops calendar §11 (doc 19) running ≥ 1 month; support/runbook handover done; comms plan approved | 30 days as default: API error budget met (doc 19 §5), zero SEV-1, degraded-share < 1%, no open class-2 parity defect | **flip the default back** — legacy is fully operational by design; 72h decision window with D1–D5 dashboards as the tripwire; comms template pre-approved |
-| **G5** | Containment of legacy analytical routes | — | G4 exit + 60d stability; OD-23 decision recorded | legacy analytical/chat routes carry a permanent redirect banner («انتقلت التحليلات إلى منصة نوافث») or are network-restricted to break habit; legacy continues operating for its remaining functions; NIP↔legacy runtime independence intact in both directions (I10) | lift containment (restore routes) — a config change on the legacy edge, owned by legacy operators |
+| **G5** | Containment of legacy analytical routes | — | G4 exit + 60d stability; OD-27 decision recorded | legacy analytical/chat routes carry a permanent redirect banner («انتقلت التحليلات إلى منصة نوافث») or are network-restricted to break habit; legacy continues operating for its remaining functions; NIP↔legacy runtime independence intact in both directions (I10) | lift containment (restore routes) — a config change on the legacy edge, owned by legacy operators |
 
 ### Gate evidence in detail — G0 and G2 (the two gates most often faked in practice)
 
@@ -508,12 +508,12 @@ Rollback is **always data-preserving**: NIP ingestion and enrichment continue du
 
 ```text
 T-7d  preconditions checklist frozen (entry criteria evidence links); comms drafted
-T-1d  parity green; dashboards D1–D5 reviewed; on-call briefed (OD-22 rota)
+T-1d  parity green; dashboards D1–D5 reviewed; on-call briefed (OD-26 rota)
 T0    config flip: default surface → NIP for all roles; legacy UI banner ON
 T0+2h smoke: synthetic golden probes per role; lane distribution normal
 T0+72h decision point: error budget + degraded share + user tickets reviewed
         → confirm, or flip back (single config change, comms template B)
-T0+30d G4 exit review → schedule G5 per OD-23
+T0+30d G4 exit review → schedule G5 per OD-27
 ```
 
 ---
@@ -529,7 +529,7 @@ T0+30d G4 exit review → schedule G5 per OD-23
 | R5 | Snapshot artifact PII exposure in transit | L/H | Encrypt-at-creation, approved channel, checksum both ends, WORM storage, audit trail (§1.3); `…_bak_20260610` never enters the artifact |
 | R6 | Dual-running ambiguity: "which number is official this month?" | M/M | Single-owner rule per gate: official outputs come from exactly one system per month-close, named in the gate record; the other is comparison-only |
 | R7 | Bootstrap re-derivation cost/time underestimated | L/M | Doc 19 §8.3: full-corpus pass ≈ one working day online (TPM-bound) or overnight via Batch API (backfill class); scheduled before G0, repeatable |
-| R8 | Legacy stays load-bearing forever (G5 never happens) | M/L | G5 has a named owner decision (OD-23) with a default recommendation and date trigger (G4+60d); containment is a banner/network change, deliberately cheap |
+| R8 | Legacy stays load-bearing forever (G5 never happens) | M/L | G5 has a named owner decision (OD-27) with a default recommendation and date trigger (G4+60d); containment is a banner/network change, deliberately cheap |
 | R9 | Fixture leaks transcript PII via CI | L/H | Fixture in restricted store, not git; placeholder names; CI runner credentialed (doc 15 OD-20) |
 
 ---
@@ -568,7 +568,7 @@ Critical-path items: OD-13 (external lead time), two *calendar* month-closes in 
 | OD-07 | Internal session data access mechanism + freshness SLA | platform owner ↔ internal IT | read-only API/export | G2 entry (live internal facts) |
 | OD-08 | Snapshot artifact retention window | data steward | life of platform (WORM) | disposal only |
 | OD-10 | Publication authority for packs | product owner | product owner signs | G3 |
-| **OD-23 (new, §4/G5)** | Containment scope, timing, and authority for legacy analytical routes (banner vs network restriction vs route removal; who owns the legacy-side change; legacy decommission explicitly out of scope) | product owner + legacy system owner | recommendation: banner-redirect at G4+60d, network restriction at G4+120d; legacy keeps running for non-analytical functions indefinitely | G5 |
+| **OD-27 (new, §4/G5)** | Containment scope, timing, and authority for legacy analytical routes (banner vs network restriction vs route removal; who owns the legacy-side change; legacy decommission explicitly out of scope) | product owner + legacy system owner | recommendation: banner-redirect at G4+60d, network restriction at G4+120d; legacy keeps running for non-analytical functions indefinitely | G5 |
 
 **Revisit triggers for this document:** OD-13 answer (either way) re-times §2/§4 · first re-snapshot delta shows legacy churn on closed months > 0.5% (tighten R3 handling) · parity set PASS-rate < 90% for reasons other than ledgered classes (re-examine crosswalk before adding questions) · a replacement transcript provider lands mid-migration (OD-06): the provider rebase (doc 06 §4) is sequenced **after** G0 exit and before G3, so packs are never published from a corpus mid-rebase.
 

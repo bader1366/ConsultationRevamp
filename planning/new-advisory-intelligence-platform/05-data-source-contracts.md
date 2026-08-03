@@ -309,7 +309,7 @@ DLQ per §1.5. Reconciliation report (per §1.6) additionally carries: era distr
 | `participants[].name` | list | text | P2 | Display name as captured by provider | `core.participant.display_name` | — | Not authoritative — `SRC-DIR` name wins for consultants |
 | `participants[].email` | list | text NULL | **P3** | Provider account email | staging only, dropped after crosswalk attempt | — | — |
 | `participants[].attended` | list | bool | P0 | Provider attendance flag | shape classifier input | DQ-002 | ≠ `SRC-INT.attendance_status` (operational truth); disagreement feeds CAP-D3/CAP-D9 |
-| `transcript.turns[]` | detail expand | array | P2 | Speaker-labelled turns: `speaker_name`, `text`, start/end ms | `transcript.transcript_turn` (immutable, versioned) | DQ-003/004/005 | text is UNTRUSTED (R15) |
+| `transcript.turns[]` | detail expand | array | P2 | Speaker-labelled turns: `speaker_name`, `text`, start/end ms | `transcript.turn` (immutable, versioned) | DQ-003/004/005 | text is UNTRUSTED (R15) |
 | `summary`, `chapter_summaries`, `topics`, `key_questions`, `action_items` | detail expands | text/array | P2 | Provider-generated derivatives | provider-feature tables; **never treated as findings** (I13 — no provenance) | — | provider "action items" ≠ NIP extracted recommendations (CAP pipeline) |
 | `metrics.read_score`, `.sentiment`, `.engagement` | detail expand | numeric | P0 | Provider scoring — opaque methodology | source-feature columns (GREENFIELD §11.4) | — | **NEVER a satisfaction or quality metric** — CAP-A3/CAP-D1 compute their own signals |
 | `payload` | full JSON | jsonb→object store | mixed | 1:1 raw archive | `ingest.raw_payload` | DQ-006 | — |

@@ -131,7 +131,7 @@ nwafeth-intelligence/
 ```
 common → registry → {repository, inference} → {semantic, evidence} → capabilities
        → {serving, verification, rendering} → apps/web
-common → registry → repository → {ingest, enrich, jobs} → apps/worker
+common → registry → {repository, inference} → {ingest, enrich, jobs} → apps/worker
 ```
 
 ### 3.3 Forbidden imports (each encodes an invariant — from doc 07 §8.3)
@@ -214,7 +214,7 @@ graph TD
   E19 --> E20
 ```
 
-External clocks that intersect this graph (not epics, but gates on them): OD-13 → EPIC-11 live pulls; OD-07 → EPIC-12 live access; OD-04 → EPIC-17 full-corpus backfill; owner review sessions → EPIC-18 approvals; owner signing → EPIC-20 DS-03 items. File them all at P0 (00-INDEX §6.2).
+External clocks that intersect this graph (not epics, but gates on them): OD-13 → EPIC-11 live pulls; OD-07 → EPIC-12 live access; OD-04 → EPIC-17 full-corpus backfill; owner review sessions → EPIC-18 approvals; owner signing → EPIC-20 DS-03 items; **DS-02 paraphrase authoring + adjudication (OD-24 annotator clock) → EPIC-20 EXP-05 calibration**. File them all at P0 (00-INDEX §6.2).
 
 ## 5. The first 20 implementation epics — strict dependency order
 
@@ -226,7 +226,7 @@ Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc re
 - *Goal:* the §3 tree exists, empty but enforced — every later epic merges into a repo that already refuses boundary violations.
 - *Exact deliverables:*
   1. Monorepo per §3.1 with all package directories and `__init__` stubs.
-  2. `pyproject.toml`: Python 3.12 pin; ruff (lint+format), mypy `--strict`, pytest with tier markers, import-linter contracts (§3.2/§3.3) as committed config.
+  2. `pyproject.toml`: Python 3.12 pin; ruff (lint+format), mypy `--strict`, pytest with tier markers, **pytest-cov + diff-cover (the §12(5) coverage gate)**, import-linter contracts (§3.2/§3.3) as committed config.
   3. CI pipeline: lint → type → import-contracts → unit → structural, all required to merge.
   4. Validation jobs for `registry/` and `schemas/` (JSON-Schema checks; stubs until first entries land).
   5. `docs/BUGS.md` (MASTER_PROMPT §13.3 entry format) + `docs/STATE.md` skeletons; deviation-note template.
@@ -265,7 +265,7 @@ Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc re
 **EPIC-04 (P0-E4) — AuthN/Z: OIDC, seven roles, deny-by-default, DB mirror.** Size L.
 - *Goal:* there is never a moment in this system's history when an unauthenticated surface exists (F2/ISS-04 unrepeatable).
 - *Exact deliverables:*
-  1. OIDC integration (Keycloak broker interim [ASSUME OD-02]); JWT validation on cached JWKS; token TTL 60 min per doc 16 §2.2.
+  1. OIDC integration (Keycloak broker interim [ASSUME OD-02]); JWT validation on cached JWKS; access-token TTL ≤ 15 min per doc 16 §2.2 (session continuity via IdP refresh).
   2. Permission-string middleware over the doc 16 §2.5 closed vocabulary; per-route permission declarations (readable by the G-SEC-1 walk).
   3. The seven roles wired end-to-end: `executive_viewer`, `analyst`, `service_owner`, `reviewer`, `steward`, `admin`, `pipeline_service`.
   4. Scoped CORS (explicit origins; wildcard structurally absent).
@@ -495,7 +495,12 @@ Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc re
 - *Doc refs:* 11 §7; 12 §4, §10, §12; 04 (entries + §2); 10 §3; 15 §3–6; 18 SCR-02/SCR-12.
 - *DoD:* every built capability returns a structurally valid envelope on the fixture corpus; every unbuilt/blocked one returns its registered reason code — never a neighbor answer (I5); EXP-05 green; ≥46 DS-03 items signed; XLSX byte-derived from the envelope (T-render); CI red on numeric drift for signed items.
 - *Tests that must exist:* T-01 signed subset; T-02/T-03 route + determinism ×5; T-04 all six grains; T-05/T-06; suppression fixtures; R6/R7 injection micro-suite (EXP-09 precursor); honesty-counter emission test.
-- *Blocked by:* EPIC-17, EPIC-18, EPIC-19.
+- *Blocked by:* EPIC-17, EPIC-18, EPIC-19; **external clock: DS-02 authored + adjudicated (~560 paraphrases, κ≥0.80 — doc 15 §2, the OD-24 annotator clock) before EXP-05 calibration can run.**
+
+**EPIC-20b (P3-E4…E10 continuation, XL → split) — the remaining P3 capability tranche.** Same DoD, tests, and envelope/verifier substrate as EPIC-20; split into ≤L tickets per engine family.
+- *Exact deliverables:* the eleven capabilities EPIC-20's first tranche does not build — **A2** (confusion engine: position-scoped markers + negation pairs), **A3** (satisfaction incl. the state-transition implicit signal), **B2** (time-loss modes over interval-merged speaking time), **B4** (violations with quotes — 100% review-gated before display, doc 04 §7), **C1** (challenges top-N over the R-P2 clustering artifact), **C5** (government-friction mentions — requires the `tax.entity` registry seeded by EPIC-18/EXP-04 alias work), **C7** (pressure-language contrastive lift with class-imbalance rules), **C8** (decision-hesitation index — hard dependency on the R-P2 clustering artifact, MASTER_PROMPT E.14), **D1**, **D5** (consultant-360 composition rules incl. review-gated evidence), **D8**. CAP-C2 and CAP-D7 remain governed-blocked (OD-05 / OD-07 reason codes per doc 04 §10); **CAP-D10 lands with the P6 pack epics** (doc 21), not here.
+- *DoD:* doc 21 §3-P3 deliverable 4 satisfied — **all 26 capabilities either built (structurally valid envelope on the fixture corpus) or returning their registered blocked reason code**; P3 cannot exit on EPIC-20 alone.
+- *Blocked by:* EPIC-20 (envelope/verifier/matcher substrate), EXP-04 (for C1/C8 clustering and C5 aliases).
 
 ---
 
@@ -527,14 +532,14 @@ Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc re
 | # | Migration | Contents | Needed by epic |
 |---|---|---|---|
 | 0001 | baseline | 11 schemas; extensions (`pgvector`, `pg_trgm`); roles `nip_web`, `nip_worker`, `nip_migrator`, `nip_readonly_bi`, `nip_steward_breakglass`; base schema grants | EPIC-02 |
-| 0002 | ops core | `ops.audit_event` (RANGE monthly, append-only REVOKEs); `ops.model_registry`; `ops.prompt_registry`; `ops.review_*` loop tables; `ops.data_quality_observation` | EPIC-05 |
+| 0002 | ops core | `ops.audit_event` (RANGE monthly, append-only REVOKEs); `ops.model_registry`; `ops.prompt_registry`; `ops.registry_snapshot` (deploy-time registry projection anchor, doc 11 §1); `ops.review_*` loop tables — created here **without** their typed-target FK columns: the columns + constraints to `tax.proposal`/`tax.entity_alias` (0008), `findings.cluster` (0007), and `packs.pack` (0012) are added by those migrations; `ops.data_quality_observation` | EPIC-05 |
 | 0003 | ops eval | `ops.eval_dataset`, `ops.eval_item`, `ops.answer_key_signature`, `ops.eval_run` | EPIC-05/08 |
 | 0004 | ingest | `source_system` (seed 8 SRC rows), `ingestion_run`, `source_cursor`, `raw_payload`, `dlq_item`, `reconciliation_result`, `provider_token_state` | EPIC-10 |
 | 0005 | core | `advisory_session` + crosswalks + `identity_resolution_event`; consultant hub + history + `consultant_source_ref` (restricted column [ASSUME OD-14]); beneficiary identity/pseudonym; dims; participants; attendance/status/rating/evaluation/followup/outcome facts | EPIC-10 |
 | 0006 | transcript | `transcript_source`, `turn` (append-only), `active_transcript`, `source_quality` | EPIC-10 |
 | 0007 | findings | `extraction_run`, `finding` (RANGE monthly + rolling partitions + alerting default), `quote_ref`, `validation_result`, `finding_kind` (seed 17), `cluster_run`/`cluster`/`cluster_member`, `session_extraction_state` | EPIC-16 |
 | 0008 | tax | taxonomy quartet + lineage + proposals; `entity` + `entity_alias`; VIOL v1 seed (owner's exact Arabic wording) | EPIC-16 |
-| 0009 | serve | `conversation`, `conversation_turn`, `resolved_facts`, `tool_call` (RANGE monthly), `answer_artifact`, `verifier_result`, `export_artifact`; **`capability_registry` + `capability_paraphrase`** (§0.2 census fix) | EPIC-19/20 |
+| 0009 | serve | `conversation`, `conversation_turn`, `resolved_fact`, `tool_call` (RANGE monthly), `answer_artifact`, `verifier_result`, `export_artifact`, `clarification_state`, `budget_state`; **`capability_registry` + `capability_paraphrase`** (§0.2 census fix) | EPIC-19/20 |
 | 0010 | evidence | `evidence_unit`, `embedding_run`, per-model embedding table (first generation), `index_version`, `active_index`, `retrieval_eval`; **`custom_collection` + `custom_collection_unit`** (§0.2) | P4 epics (skeleton earlier is fine) |
 | 0011 | jobs | `analysis_job`, `question_fingerprint`, `corpus_snapshot`, `job_partition`, `session_task`, `job_finding`, `job_aggregate`, `promotion_candidate` | P5 epics |
 | 0012 | packs | `pack` (immutability trigger = the T-11 pin), `pack_session_set`, `pack_finding`, `publication` (append-only), supersession/retraction | P6 epics |
@@ -551,9 +556,9 @@ Rules: every migration has a real downgrade; `legacy_snapshot` is restored (EPIC
 | 2 | auth plumbing on all routes · 25 audit read | EPIC-04/05 |
 | 3 | 16–17 review queues + append-only decisions | EPIC-08 |
 | 4 | 22 ingest runs/DLQ/replay · 23 sources admin (activation audited) | EPIC-11/12/15 |
-| 5 | 18–20 taxonomy read/propose/publish · 21 data-quality health (basic) | EPIC-18 |
+| 5 | 18–20 taxonomy read/propose/publish · 21 data-quality health (basic) · **7 transcript-window, reviewer/steward scope only** — SCR-08b embeds the ±5-turn context viewer («لا قرار بلا نص كامل», doc 18), so the review portal cannot ship without it | EPIC-18 |
 | 6 | 5 capabilities catalogue · 6 metric-queries · 1–4 conversations/turns (Lane 0 + Lane 2 only) · 24 exports | EPIC-19/20 |
-| 7 | 7 transcript-window (access-audited; evidence viewer) — full Lanes 1–2 turn flow | P4 |
+| 7 | 7 transcript-window **widened to analyst/evidence-viewer scope** (access-audited) — full Lanes 1–2 turn flow | P4 |
 | 8 | 8–13 jobs API (submit/status/result/findings/rerun/cancel) | P5 |
 | 9 | 14–15 publications + frozen packs | P6 |
 
@@ -581,7 +586,7 @@ Contract discipline from the first endpoint: RFC 7807 errors, no 200-on-failure,
 6. `judge_v1` — triage-only judging; output schema labels its verdicts non-gating (I18).
 7. `triage_<family>_v1` — presence-triage prompts for the 20b pre-pass.
 
-**Strict JSON Schemas (`schemas/`):** per-family extraction schemas (all fields `required`, `additionalProperties: false` — the Groq strict-mode requirements [FACT groq-docs 2026-08-02]); the 11 tool schemas of doc 12 §5.3 (9 model-callable); `lane3_meta_schema_v1` (doc 13 §2.3 — validates model-proposed analysis schemas against the closed primitive types); `envelope_v1`; the narrative-envelope schema for the composer.
+**Strict JSON Schemas (`schemas/`):** per-family extraction schemas (all fields `required`, `additionalProperties: false` — the Groq strict-mode requirements [FACT groq-docs 2026-08-02]); the 11 tool schemas of doc 12 §5.3 (9 model-callable); **`narrative_envelope_v1`** (the composer's strict output schema — normative definition in doc 12 §9.2); `lane3_meta_schema_v1` (doc 13 §2.3 — validates model-proposed analysis schemas against the closed primitive types); `envelope_v1`; the narrative-envelope schema for the composer.
 
 **Harnesses and calibration scripts:** EXP-03 benchmark runner + scoring-sheet emitter (doc 14 §3.3); τ/δ calibration script over DS-02 held-out splits (doc 04 §2 — refuses test-manifest item IDs); EXP-06 cross-product harness; EXP-07 retrieval eval writing `evidence.retrieval_eval`; the EXP-09 injection corpus generator; the Groq catalogue poller (doc 14 §9.4) feeding deprecation ops tasks.
 
@@ -620,7 +625,7 @@ Every PR body carries, in order:
 2. **Static gates output** — `ruff check`, `mypy --strict nwafeth/`, `lint-imports` — pasted, not summarized.
 3. **Test output** — `pytest -m tier_p` full tail including the honesty-counter block (doc 15 §6.4) once the suite exists; for touched areas, the named test families run explicitly (e.g., `pytest tests/structural -k pin_F1`).
 4. **Migration proof** (any PR containing a migration) — fixture-DB output of `alembic upgrade head` → `alembic downgrade -1` → `alembic upgrade head`, plus the constraint/grant diff vs the pin ledger and G-SEC-2 baseline.
-5. **Coverage** — new-code line coverage ≥ 85% and no decrease of the global figure [REC — alternative: global-only threshold; rejected because it lets large PRs dilute; revisit if the metric drives test gaming].
+5. **Coverage** — `pytest -m tier_p --cov=nwafeth --cov-report=xml` then `diff-cover coverage.xml --compare-branch=origin/main --fail-under=85`: new-code line coverage ≥ 85% and no decrease of the global figure [REC — toolchain: pytest-cov + diff-cover, pinned in EPIC-01; alternative: global-only threshold; rejected because it lets large PRs dilute; revisit if the metric drives test gaming].
 6. **Golden-diff declaration** (any diff under `tests/golden/` or `registry/`) — which capability, which value moved from what to what, why the new value is correct, and the re-sign signature ID (CI cross-checks it against `ops.answer_key_signature`).
 7. **Replay report** (any change to model IDs, prompts, embeddings, or structured-output modes) — the doc 15 §6.2 replay summary attached; deploy tooling independently enforces the fingerprint match (HG-8).
 8. **Deviation notes** — any place the implementation deviates from a planning document, with the §0.1(4) justification; "none" is an acceptable but mandatory statement.
@@ -684,12 +689,12 @@ Structural prohibitions. Each cites its authority; several are also mechanically
 13. **MUST NOT use model self-confidence as a gate, or let `eval_judge` pass anything** — judges flag; deterministic code and human signatures decide (I18).
 14. **MUST NOT edit a published pack or any append-only row** — corrections are supersession/reissue; history is append-only everywhere it is declared so (ADR-0011; doc 08 C6).
 15. **MUST NOT introduce magic-value states** (`'PENDING'` et al.), TRUNCATE-and-rebuild pipelines, positional file parsing, DOM-scraped exports, or module-global mutable state — each is a named legacy defect with a structural pin (CORE-BRIEF §12).
-16. **MUST NOT mint ADR/OD/CAP/DS/EXP IDs outside doc 22 / doc 04 registration** — next free OD is OD-26; promoted capabilities are CAP-E##; never reuse an ID (doc 22 §6).
+16. **MUST NOT mint ADR/OD/CAP/DS/EXP IDs outside doc 22 / doc 04 registration** — next free OD is OD-28; promoted capabilities are CAP-E##; never reuse an ID (doc 22 §6).
 17. **MUST NOT bypass the review workflow for anything reviewable** — no spreadsheet side-channels for labels, aliases, or keys; ADR-0012 is single-path by design.
 18. **MUST NOT expose raw exceptions to users or return 200 on failure** — RFC 7807 + reason codes + `system_state` are the only failure surfaces (I16; doc 17 §0).
 19. **MUST NOT depend on parallel tool calls or more than one tool decision per model turn** (doc 14 §5; GREENFIELD §10.5).
 20. **MUST NOT begin an epic whose "blocked by" list is unsatisfied**, even when locally convenient — the order encodes gate dependencies, not preference (§5).
-21. **MUST NOT introduce a GPU-dependent component or a self-hosted generative model** — the environment is CPU-only and all generative inference goes through the single Groq client; the only local models are CPU embeddings (ONNX/int8), and the reranker runs offline only [DECISION owner 2026-08-03; SD-17 doc 02].
+21. **MUST NOT introduce a GPU-dependent component or a self-hosted generative model** — the environment is CPU-only and all generative inference goes through the single Groq client; the only local models are CPU embeddings (ONNX/int8), and the reranker runs offline only; **and MUST NOT send transcript text to any external service other than the gated Groq client — embeddings/reranking run only in-environment**, or doc 14 §1.6's data-residency claim (which doc 16's outbound matrix depends on) silently breaks [DECISION owner 2026-08-03; SD-17 doc 02].
 
 ## 14. Cross-index — where to look things up
 

@@ -289,9 +289,9 @@ The benchmark harness emits one sheet per (role, benchmark_version) as a version
 {
   "error": "VALIDATION_FAILED",
   "invalid_fields": [
-    {"path": "findings[2].satisfaction_label",
+    {"path": "findings[2].polarity",
      "got": "راضي جداً",
-     "allowed": ["إيجابي", "سلبي", "محايد"],
+     "allowed": ["positive", "negative", "neutral"],
      "note": "قيمة غير مسجلة في SAT taxonomy v3 — أعد التصنيف إلى إحدى القيم المسموحة أو احذف النتيجة إن لم ينطبق أي تصنيف"},
     {"path": "findings[2].quote.turn_index",
      "got": 412, "allowed_range": [0, 187],
@@ -306,7 +306,7 @@ The benchmark harness emits one sheet per (role, benchmark_version) as a version
 
 ### 4.1 Worked strict-schema example — satisfaction-signal extraction (SAT family)
 
-Schema sketch (strict-mode compliant: every property `required`, `additionalProperties: false`, optionality via null unions; taxonomy enum members ≤40 so they live schema-side per doc 11 G-REG-4):
+Field names and enums are exactly doc 08 §6.2's normative payload contract for `satisfaction_signal` (the generated `schemas/extract_satisfaction_signal_v1.json`). Schema sketch (strict-mode compliant: every property `required`, `additionalProperties: false`, optionality via null unions; taxonomy enum members ≤40 so they live schema-side per doc 11 G-REG-4):
 
 ```json
 {
@@ -324,17 +324,18 @@ Schema sketch (strict-mode compliant: every property `required`, `additionalProp
         "type": "array", "maxItems": 20,
         "items": {
           "type": "object", "additionalProperties": false,
-          "required": ["satisfaction_label", "quote", "turn_index",
-                       "speaker_role", "intensity", "qualifier"],
+          "required": ["polarity", "quote", "turn_index",
+                       "speaker_role", "intensity", "aspect", "explicitness"],
           "properties": {
-            "satisfaction_label": {"type": "string", "enum": ["إيجابي", "سلبي", "محايد"]},
+            "polarity": {"type": "string", "enum": ["positive", "negative", "neutral"]},
             "quote": {"type": "string",
               "description": "اقتباس حرفي من نص المداخلة دون أي تعديل أو تشكيل"},
             "turn_index": {"type": "integer", "minimum": 0},
             "speaker_role": {"type": "string", "enum": ["beneficiary", "consultant", "unknown"]},
-            "intensity": {"type": "string", "enum": ["قوي", "معتدل", "ضعيف"]},
-            "qualifier": {"type": ["string", "null"],
-              "description": "سياق مقيِّد إن وُجد (مثل: رضا مشروط بإتمام إجراء) وإلا null"}
+            "intensity": {"type": "string", "enum": ["strong", "moderate", "weak"]},
+            "aspect": {"type": ["string", "null"],
+              "description": "سياق مقيِّد إن وُجد (مثل: رضا مشروط بإتمام إجراء) وإلا null"},
+            "explicitness": {"type": "string", "enum": ["explicit", "implicit"]}
           }
         }
       }
@@ -349,9 +350,9 @@ Valid output for a worked turn — beneficiary at turn 41 said «الصراحة 
 {"session_ref": "01J8ZQ3WKV5Y2N8XT0AHB6C9DM",
  "no_signal_found": false,
  "findings": [
-   {"satisfaction_label": "إيجابي", "quote": "الصراحة الجلسة أفادتني كثير",
+   {"polarity": "positive", "quote": "الصراحة الجلسة أفادتني كثير",
     "turn_index": 41, "speaker_role": "beneficiary", "intensity": "قوي", "qualifier": null},
-   {"satisfaction_label": "سلبي", "quote": "كنت أتمنى نتكلم عن التمويل أكثر",
+   {"polarity": "negative", "quote": "كنت أتمنى نتكلم عن التمويل أكثر",
     "turn_index": 41, "speaker_role": "beneficiary", "intensity": "ضعيف",
     "qualifier": "رغبة غير ملبّاة في تغطية موضوع التمويل"}
  ]}

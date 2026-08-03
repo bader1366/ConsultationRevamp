@@ -156,7 +156,7 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 **Prerequisites.** P0 exit; OD-13 client issued (or explicitly still pending → live Read.ai pulls deferred, snapshot-only mode flagged); OD-07 access mechanism confirmed or interim export agreed.
 
 **Exact deliverables.**
-1. Full `core` + `transcript` + `ingest` DDL per doc 08 (Alembic migrations 0002…): `advisory_session`, crosswalks (`provider_meeting_map`, `internal_session_map`), dimensions, participants, attendance/status facts, ratings/evaluations, transcript sources/versions/turns/active-pointer.
+1. Full `core` + `transcript` + `ingest` DDL per doc 08 (Alembic migrations 0004–0006, doc 23 §6): `advisory_session`, crosswalks (`provider_meeting_map`, `internal_session_map`), dimensions, participants, attendance/status facts, ratings/evaluations, transcript sources/versions/turns/active-pointer.
 2. Source adapters per doc 09: SRC-READAI (pull, paginated, idempotent re-fetch, cursored), SRC-INT / SRC-DIR / SRC-REF / SRC-EVAL / SRC-OUT (header-mapped, versioned — never positional; F-lesson), each with run ledger, DLQ, reconciliation counts.
 3. Identity resolution service: deterministic rungs M1–M2 then scored M3 (doc 09 §M-rungs), `resolution_status` enum end-to-end — **no magic strings** (ADR-0006); ambiguity queue surfaced in the review portal.
 4. Snapshot bootstrap ETL: `legacy_snapshot` → canonical schemas; idempotent, re-runnable, reconciliation totals asserted (row counts, per-month counts vs CORE-BRIEF §11 baselines re-measured by committed script).

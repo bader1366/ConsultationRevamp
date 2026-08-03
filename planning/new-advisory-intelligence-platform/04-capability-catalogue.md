@@ -341,13 +341,13 @@ Entry format: registry fields as a table (values are the YAML values, abbreviate
 
 **Data gaps.** Neutral class had **no handler in the legacy system** despite the data existing — the new build ships all three classes from day one [FACT MASTER_PROMPT Appendix B]. Implicit state-transition detection needs its own labelled validation sample (doc 15 set 5).
 
-**Routing note.** يوجَّه: «وش أبرز مؤشرات الرضا الإيجابية والسلبية؟» · «أعطني أهم ٥ إشارات رضا وأهم ٥ استياء» · «كيف يظهر رضا المستفيد في النص؟». **Near-miss:** «هل تقييمات المستفيدين متوافقة مع كلامهم في الجلسات؟» → **CAP-D1** (سؤال اتساق مصدرين، لا استخراج مؤشرات).
+**Routing note.** يوجَّه: «وش أبرز مؤشرات الرضا الإيجابية والسلبية؟» · «أعطني أهم 5 إشارات رضا وأهم 5 استياء» · «كيف يظهر رضا المستفيد في النص؟». **Near-miss:** «هل تقييمات المستفيدين متوافقة مع كلامهم في الجلسات؟» → **CAP-D1** (سؤال اتساق مصدرين، لا استخراج مؤشرات).
 
 ### 4.4 CAP-B1 · `clear_steps_rate` — نسبة الجلسات المنتهية بخطوات واضحة
 
 Registry entry given in full as the worked YAML example in §1.4. Additional contract notes:
 
-- **Headline metric of the whole product** [FACT MASTER_PROMPT E.4] — the strongest label-validation requirement in the catalogue: ≥100 owner-adjudicated samples per class, agreement rate published beside every rendered number («دقة التصنيف المقاسة: ٩١٪ على عينة ١٠٠») as a stated limitation.
+- **Headline metric of the whole product** [FACT MASTER_PROMPT E.4] — the strongest label-validation requirement in the catalogue: ≥100 owner-adjudicated samples per class, agreement rate published beside every rendered number («دقة التصنيف المقاسة: 91% على عينة 100») as a stated limitation.
 - Splits: by `service_category`, by canonical challenge category (valid problem type), by `programme`, by `channel`. Every split is labelled with which meaning of «قطاع» it uses (§8) — the legacy `clear_steps_by_sector` said "sector" while grouping by government entity; that mismatch class is structurally prevented by dimension registration (I12).
 - NULL step_clarity rows are a rendered exclusion, never silently dropped (legacy baseline 1,327/16,911 ≈ 7.8% [FACT CORE-BRIEF §11]; re-measured after re-extraction).
 
@@ -407,7 +407,7 @@ Registry entry given in full as the worked YAML example in §1.4. Additional con
 
 **Data gaps.** Legacy repeated-questions rows (14,523) are seed evidence only — re-derived, never migrated [DECISION CORE-BRIEF §0/ADR-0016]. Cluster quality gated on EXP-04 embedding benchmark.
 
-**Routing note.** يوجَّه: «وش أكثر الأسئلة تكراراً بإجابات شبه ثابتة؟» · «أعطني أعلى ١٠ أسئلة متكررة» · «أي الأسئلة تصلح لمقالات معرفية جاهزة؟». **Near-miss:** «أي المواضيع إجاباتها متضاربة بين المستشارين؟» → **CAP-C6** (الطرف الآخر من نفس المحرك — التشتت العالي).
+**Routing note.** يوجَّه: «وش أكثر الأسئلة تكراراً بإجابات شبه ثابتة؟» · «أعطني أعلى 10 أسئلة متكررة» · «أي الأسئلة تصلح لمقالات معرفية جاهزة؟». **Near-miss:** «أي المواضيع إجاباتها متضاربة بين المستشارين؟» → **CAP-C6** (الطرف الآخر من نفس المحرك — التشتت العالي).
 
 ### 4.7 CAP-B4 · `violations_with_quotes` — مؤشرات المخالفات مع اقتباسات
 
@@ -449,7 +449,7 @@ Registry entry given in full as the worked YAML example in §1.4. Additional con
 | Dimensions | violation_category, programme, month, quarter |
 | Unit · denominator | finding AND session AND consultant — **all four measures mandatory per row**: finding count, `COUNT(DISTINCT advisory_session_id)`, `COUNT(DISTINCT consultant_id)`, rate per 100 sessions [FACT GREENFIELD §5-B5] |
 | Evidence | per_top_item; ≥1 reviewed verified quote per ranked type |
-| Support / suppression | min_cell_n 30 for rates; **concentration guard**: if one session contributes >20% of a type's findings, the row renders a visible concentration flag («جلسة واحدة تمثل ٤٠٪ من هذا النوع») [REC — implements "a single session must not distort invisibly"] |
+| Support / suppression | min_cell_n 30 for rates; **concentration guard**: if one session contributes >20% of a type's findings, the row renders a visible concentration flag («جلسة واحدة تمثل 40% من هذا النوع») [REC — implements "a single session must not distort invisibly"] |
 | Error-cost policy | precision_over_recall (inherits B4 review gate: unreviewed findings are a separate, clearly-labelled series) |
 | RECOMPUTE_REQUIRED | false |
 | τ/δ | 0.82 / 0.10 · confusable_with: CAP-B4 |
@@ -480,7 +480,7 @@ Registry entry given in full as the worked YAML example in §1.4. Additional con
 | Dimensions | challenge_category, service_category, programme, government_entity, month, quarter |
 | Unit · denominator | session (`COUNT(DISTINCT advisory_session_id)`; raw finding rows a separate stated measure) · sessions in window with any challenge extracted — **top-10 always carries its base** (E.0 rule 3) |
 | Evidence | per_top_item; ≥2 quotes per top challenge |
-| Support / suppression | min_cell_n 30; Wilson 95; rate per 100 sessions; **mapping coverage published** («٨٧٪ من صفوف التحديات مُسندة لمجموعة قانونية») — an unstated long tail turns top-10 into top-10-of-40% [FACT MASTER_PROMPT E.8] |
+| Support / suppression | min_cell_n 30; Wilson 95; rate per 100 sessions; **mapping coverage published** («87% من صفوف التحديات مُسندة لمجموعة معيارية») — an unstated long tail turns top-10 into top-10-of-40% [FACT MASTER_PROMPT E.8] |
 | Error-cost policy | balanced |
 | RECOMPUTE_REQUIRED | false |
 | τ/δ | 0.82 / 0.10 · confusable_with: CAP-C2, CAP-C4 |
@@ -492,7 +492,7 @@ Registry entry given in full as the worked YAML example in §1.4. Additional con
 
 **Data gaps.** Synonym seed coverage unknown on the re-derived corpus until first full extraction run — mapping-coverage metric is the readiness gauge.
 
-**Routing note.** يوجَّه: «أبرز التحديات المتكررة آخر ربع؟» · «وش أهم ١٠ تحديات واجهت المستفيدين؟» · «التحديات الأكثر شيوعاً مع دمج المترادفات». **Near-miss:** «وش أعراض تحدي التمويل وأسبابه المعلنة؟» → **CAP-C2** (تعمّق في تحدٍ واحد، لا ترتيب).
+**Routing note.** يوجَّه: «أبرز التحديات المتكررة آخر ربع؟» · «وش أهم 10 تحديات واجهت المستفيدين؟» · «التحديات الأكثر شيوعاً مع دمج المترادفات». **Near-miss:** «وش أعراض تحدي التمويل وأسبابه المعلنة؟» → **CAP-C2** (تعمّق في تحدٍ واحد، لا ترتيب).
 
 ### 5.2 CAP-C2 · `challenge_symptoms_causes_asks` — الأعراض والأسباب المعلنة وطلب المستفيد الفعلي
 
@@ -546,9 +546,9 @@ Registry entry given in full as the worked YAML example in §1.4. Additional con
 
 **Data gaps.** None beyond constituents'; inherits every upstream capability's coverage statements.
 
-**Routing note.** يوجَّه: «وش المؤشرات اللي ارتفعت أو انخفضت مقارنة بالشهر السابق؟» · «أي التحديات صاعدة وأيها هابطة؟» · «اتجاهات هذا الربع شهرياً». **Near-miss:** «أبرز الاستفسارات والفئات خلال ٣ أشهر؟» → **CAP-C4** (نافذة متدحرجة وترتيب، لا اتجاهات).
+**Routing note.** يوجَّه: «وش المؤشرات اللي ارتفعت أو انخفضت مقارنة بالشهر السابق؟» · «أي التحديات صاعدة وأيها هابطة؟» · «اتجاهات هذا الربع شهرياً». **Near-miss:** «أبرز الاستفسارات والفئات خلال 3 أشهر؟» → **CAP-C4** (نافذة متدحرجة وترتيب، لا اتجاهات).
 
-### 5.4 CAP-C4 · `top_inquiries_and_categories_3m` — أبرز الاستفسارات والفئات خلال ٣ أشهر
+### 5.4 CAP-C4 · `top_inquiries_and_categories_3m` — أبرز الاستفسارات والفئات خلال 3 أشهر
 
 | Registry field | Value |
 |---|---|
@@ -573,7 +573,7 @@ Registry entry given in full as the worked YAML example in §1.4. Additional con
 
 **Data gaps.** `business_sector` genuinely unavailable until an external firm-identity source exists → permanent `DIMENSION_NOT_AVAILABLE` until then [FACT MASTER_PROMPT Appendix A].
 
-**Routing note.** يوجَّه: «أبرز الاستفسارات وأهم الفئات خلال آخر ٣ أشهر؟» · «وش أكثر المواضيع سؤالاً هذا الربع؟» · «أعلى ٥ فئات خدمة آخر ثلاثة أشهر». **Near-miss:** «وش أهم القطاعات؟» → **Lane 2 clarification** (لفظ «قطاع» غامض بين ثلاثة أبعاد — §8؛ لا يُخمَّن).
+**Routing note.** يوجَّه: «أبرز الاستفسارات وأهم الفئات خلال آخر 3 أشهر؟» · «وش أكثر المواضيع سؤالاً هذا الربع؟» · «أعلى 5 فئات خدمة آخر ثلاثة أشهر». **Near-miss:** «وش أهم القطاعات؟» → **Lane 2 clarification** (لفظ «قطاع» غامض بين ثلاثة أبعاد — §8؛ لا يُخمَّن).
 
 ### 5.5 CAP-C5 · `government_friction_mentions` — الجهات الحكومية المذكورة كنقاط احتكاك (استخراج نصي فقط)
 
@@ -588,7 +588,7 @@ Registry entry given in full as the worked YAML example in §1.4. Additional con
 | Dimensions | government_entity (canonical), challenge_category, programme, quarter |
 | Unit · denominator | mention AND session (both reported; ranked by DISTINCT sessions) · sessions in window; rate per 100 sessions with CI |
 | Evidence | per_top_item; ≥2 quotes per top entity; every mention resolvable to its turn |
-| Support / suppression | min_cell_n 30 for rates; **alias-mapping coverage published on the face** («٩١٪ من الإشارات أُسندت لجهة قانونية») — the unmapped tail is a stated limitation, never silent |
+| Support / suppression | min_cell_n 30 for rates; **alias-mapping coverage published on the face** («91% من الإشارات أُسندت لجهة معيارية معتمدة») — the unmapped tail is a stated limitation, never silent |
 | Error-cost policy | precision_over_recall for entity assignment (misattributing friction to the wrong government body is an incident class) |
 | RECOMPUTE_REQUIRED | false |
 | τ/δ | 0.85 / 0.10 · confusable_with: none committed; adversarial near-miss below [REC: higher τ — names government bodies] |
@@ -741,7 +741,7 @@ These are required additions even where the legacy application never supported t
 
 **Data gaps.** Ingestion of internal consultant evaluations is a doc-05 contract item; field availability and freshness ride on the internal-data access mechanism **[ASSUME OD-07]** — until confirmed, the capability computes on whatever evaluation fields the contract lands and declares the rest `DATA_NOT_ENRICHED`. Omitting internal ratings/evaluations from the platform is a §14 rejection criterion — this capability is the guarantee they are first-class.
 
-**Routing note.** يوجَّه: «هل تقييم المستشار يوافق تقييم المستفيد لنفس الجلسة؟» · «وين يختلف تقييم المستشار عن المستفيد؟» · «مصفوفة الاتفاق بين التقييمين». **Near-miss:** «أعطني الملف الشامل للمستشار فلان» → **CAP-D5** (ملف ٣٦٠ متعدد الأبعاد، لا مقارنة تقييمين).
+**Routing note.** يوجَّه: «هل تقييم المستشار يوافق تقييم المستفيد لنفس الجلسة؟» · «وين يختلف تقييم المستشار عن المستفيد؟» · «مصفوفة الاتفاق بين التقييمين». **Near-miss:** «أعطني الملف الشامل للمستشار فلان» → **CAP-D5** (ملف 360 متعدد الأبعاد، لا مقارنة تقييمين).
 
 ### 6.3 CAP-D3 · `status_attendance_quality_link` — الحالة التشغيلية والحضور مقابل جودة الجلسة
 
@@ -795,9 +795,9 @@ These are required additions even where the legacy application never supported t
 
 **Data gaps.** Whether "cancelled by beneficiary" vs "cancelled by consultant/system" is distinguishable depends on the internal status vocabulary (doc 05 / OD-07); until then a single `cancelled` class with the limitation stated.
 
-**Routing note.** يوجَّه: «حلل الإلغاء وعدم الحضور حسب البرنامج والقناة» · «كم معدل عدم الحضور لكل ١٠٠ جلسة محجوزة؟» · «اتجاه الإلغاءات آخر ١٢ شهراً». **Near-miss:** «هل عدم الحضور مرتبط بجودة الجلسات؟» → **CAP-D3** (الربط بالجودة، لا معدلات الإلغاء).
+**Routing note.** يوجَّه: «حلل الإلغاء وعدم الحضور حسب البرنامج والقناة» · «كم معدل عدم الحضور لكل 100 جلسة محجوزة؟» · «اتجاه الإلغاءات آخر 12 شهراً». **Near-miss:** «هل عدم الحضور مرتبط بجودة الجلسات؟» → **CAP-D3** (الربط بالجودة، لا معدلات الإلغاء).
 
-### 6.5 CAP-D5 · `consultant_360` — الملف الشامل للمستشار ٣٦٠
+### 6.5 CAP-D5 · `consultant_360` — الملف الشامل للمستشار 360
 
 | Registry field | Value |
 |---|---|
@@ -822,7 +822,7 @@ These are required additions even where the legacy application never supported t
 
 **Data gaps.** Inherits D1/D2/D7 coverage constraints per axis; consultant identity resolution (nullable FK + `resolution_status`, never `'PENDING'` strings [FACT CORE-BRIEF §6]) — unresolved-consultant sessions are a named exclusion (legacy baseline 57 meetings, 0.3%).
 
-**Routing note.** يوجَّه: «أعطني الملف الشامل للمستشار …» · «تقرير ٣٦٠ درجة عن أداء المستشار …» · «ملخص أداء المستشار: الحجم والتقييم والمخالفات والمتابعة». **Near-miss:** «قارن أداء البرامج وفئات الخدمة» → **CAP-D6** (مقارنة كيانات تشغيلية، لا ملف فرد).
+**Routing note.** يوجَّه: «أعطني الملف الشامل للمستشار …» · «تقرير 360 درجة عن أداء المستشار …» · «ملخص أداء المستشار: الحجم والتقييم والمخالفات والمتابعة». **Near-miss:** «قارن أداء البرامج وفئات الخدمة» → **CAP-D6** (مقارنة كيانات تشغيلية، لا ملف فرد).
 
 ### 6.6 CAP-D6 · `program_service_comparison` — مقارنة البرامج وفئات الخدمة بمعدلات معيارية
 
@@ -849,7 +849,7 @@ These are required additions even where the legacy application never supported t
 
 **Data gaps.** `service_category` 77.3% populated at baseline (48 values) — remainder a named exclusion [FACT CORE-BRIEF §11].
 
-**Routing note.** يوجَّه: «قارن البرامج وفئات الخدمة بمعدلات معيارية» · «أي برنامج أعلى في وضوح الخطوات لكل ١٠٠ جلسة؟» · «مقارنة مسارات إرشاد واستشارات وشراكات». **Near-miss:** «وش المؤشرات الصاعدة والهابطة مقارنة بالشهر السابق؟» → **CAP-C3** (اتجاهات زمنية، لا مقارنة كيانات).
+**Routing note.** يوجَّه: «قارن البرامج وفئات الخدمة بمعدلات معيارية» · «أي برنامج أعلى في وضوح الخطوات لكل 100 جلسة؟» · «مقارنة مسارات إرشاد واستشارات وشراكات». **Near-miss:** «وش المؤشرات الصاعدة والهابطة مقارنة بالشهر السابق؟» → **CAP-C3** (اتجاهات زمنية، لا مقارنة كيانات).
 
 ### 6.7 CAP-D7 · `followup_completion` — متطلبات المتابعة وإتمام الإجراءات
 
@@ -926,7 +926,7 @@ These are required additions even where the legacy application never supported t
 | PII class | aggregate_only (record drill-down under steward RBAC) |
 | Golden / signoff | structural; observation-kind enum owner-reviewed |
 
-**Method (→ doc10#CAP-D9, 4 lines).** Serves the reconciliation and quality facts the pipelines already compute (doc 09): unmatched provider↔internal sessions both directions, unresolved consultant identities by `resolution_status`, duration disagreements beyond tolerance between provider metadata and internal records, rating rows that bridge to no session, transcript-less sessions, speaker-role-missing turn share, extraction-validation rejection rates, taxonomy rows pending reclassification. Every number is a governed metric with drill-down; this capability is why source disagreement is *visible product surface* rather than a silent join loss — the answer to «ليش التغطية ٤٨٪؟» is a report, not a shrug.
+**Method (→ doc10#CAP-D9, 4 lines).** Serves the reconciliation and quality facts the pipelines already compute (doc 09): unmatched provider↔internal sessions both directions, unresolved consultant identities by `resolution_status`, duration disagreements beyond tolerance between provider metadata and internal records, rating rows that bridge to no session, transcript-less sessions, speaker-role-missing turn share, extraction-validation rejection rates, taxonomy rows pending reclassification. Every number is a governed metric with drill-down; this capability is why source disagreement is *visible product surface* rather than a silent join loss — the answer to «ليش التغطية 48%؟» is a report, not a shrug.
 
 **Data gaps.** None of its own — it *is* the data-gap reporter. Its own coverage statement declares which source contracts are live (OD-07 phasing).
 
@@ -939,7 +939,7 @@ These are required additions even where the legacy application never supported t
 | Personas | executive_viewer (consumer), steward/admin (publication), all others read published packs |
 | Lane · owner_type | 0 · curated composite (pack factory) |
 | Source tables | `packs.pack`, `packs.pack_finding`, `packs.publication`, `jobs.corpus_snapshot`, + every constituent capability's tables read-only |
-| Taxonomies | ALL used taxonomies — **stamp_and_freeze**; the pack stamps every taxonomy it drew on, each with its own version («التصنيفات: المخالفات ن٦ · التحديات ن٣») [FACT MASTER_PROMPT §4.3 mechanic 1b] |
+| Taxonomies | ALL used taxonomies — **stamp_and_freeze**; the pack stamps every taxonomy it drew on, each with its own version («التصنيفات: المخالفات ن6 · التحديات ن3») [FACT MASTER_PROMPT §4.3 mechanic 1b] |
 | Period | default `last_closed_period_of_cadence`; all 6 grains ad-hoc (an ad-hoc «حزمة» for an arbitrary window is a *report*, not a *publication* — publication rows exist only for governed cadences) |
 | Cadence · comparison | monthly + quarterly · preceding_equal_window |
 | Dimensions | n/a (pack = composition of constituent capabilities' outputs) |
@@ -1013,7 +1013,7 @@ Per-capability application:
 | CAP-B1 (splits) | yes — labelled «حسب فئة الخدمة» | yes — separate split, labelled «حسب الجهة الحكومية المذكورة» (the legacy mislabel made unreachable) | refused with DIMENSION_NOT_AVAILABLE |
 | CAP-B2, CAP-B3 | yes | no | not offered |
 | CAP-C1 | yes | yes (challenge×entity cross-tab) | refused |
-| CAP-C4 («أعلى ٥ قطاعات») | **default reading = service_category, stated on the answer face** | offered as a distinct section | refused with explanation that firm-sector data does not exist |
+| CAP-C4 («أعلى 5 قطاعات») | **default reading = service_category, stated on the answer face** | offered as a distinct section | refused with explanation that firm-sector data does not exist |
 | CAP-C5 | attaches problem type | **is the entity capability** | n/a |
 | CAP-D6 | yes — comparison axis | no | refused |
 | CAP-D8 | yes | no | not offered |
@@ -1024,7 +1024,7 @@ Per-capability application:
 {"tool": "request_clarification", "options": [
   {"id": "service_category",  "label_ar": "فئة الخدمة الاستشارية (مثل التمويل، القانونية)"},
   {"id": "government_entity", "label_ar": "الجهة الحكومية المذكورة في الجلسات"},
-  {"id": "business_sector",   "label_ar": "القطاع الصناعي لمنشأة المستفيد (غير متوفر حالياً — سيوضح النظام البديل)"}]}
+  {"id": "business_sector",   "label_ar": "قطاع نشاط منشأة المستفيد (غير متوفر حالياً — تُعرض التقسيمات المتاحة بدلاً منه)"}]}
 ```
 
 Choosing the third option returns the honest boundary with the two available alternatives — the option is listed so the user learns the distinction rather than having it silently collapsed [REC; alternative: hide unavailable option — rejected, it reproduces the ambiguity forever; revisit-trigger: OD external-identity source lands, business_sector becomes real].

@@ -661,7 +661,7 @@ Layer ordering (lower may never import higher):
 ```
 common → registry → {repository, inference} → {semantic, evidence} → capabilities
        → {serving, verification, rendering} → apps/web
-common → registry → repository → {ingest, enrich, jobs} → apps/worker
+common → registry → {repository, inference} → {ingest, enrich, jobs} → apps/worker
 ```
 
 Contract sketch (`pyproject.toml` — configuration, not production code):

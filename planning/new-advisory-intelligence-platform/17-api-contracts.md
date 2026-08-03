@@ -261,15 +261,15 @@ Turn 1 — `{"question_ar": "كيف كان أداء قطاع التجزئة ال
   "clarification": {
     "prompt_ar": "«قطاع» تحتمل أكثر من معنى في بيانات المنصة. أيها تقصد؟",
     "options": [
-      { "option_id": "OPT-service_category", "label_ar": "فئة الخدمة الاستشارية (مثل: التجزئة ضمن فئات الخدمة)" },
-      { "option_id": "OPT-government_entity", "label_ar": "جهة حكومية مذكورة في الجلسات" },
-      { "option_id": "OPT-unsupported_business_sector", "label_ar": "القطاع التجاري للمنشأة (غير متوفر حالياً — لا يوجد مصدر هوية خارجي)" }
+      { "option_id": "OPT-sector-service_category", "label_ar": "فئة الخدمة الاستشارية (مثل: التجزئة ضمن فئات الخدمة)" },
+      { "option_id": "OPT-sector-government_entity", "label_ar": "جهة حكومية مذكورة في الجلسات" },
+      { "option_id": "OPT-sector-business_sector", "label_ar": "قطاع نشاط منشأة المستفيد (غير متوفر حالياً — لا يوجد مصدر هوية خارجي)" }
     ],
     "expires_at": "2026-08-02T11:11:07Z"
   }, "turn_seq": 4 }
 ```
 
-Turn 2 — `{"clarification_response": {"turn_seq": 4, "selected_option_id": "OPT-service_category"}}` → `200 kind:"answer"` scoped to `service_category='التجزئة'`. Options come only from the registry (≤4, closed — Lane 2 contract); a free-text reply instead of a selection is treated as a **new question**. Expired clarification: `410 gone`.
+Turn 2 — `{"clarification_response": {"turn_seq": 4, "selected_option_id": "OPT-sector-service_category"}}` → `200 kind:"answer"` scoped to `service_category='التجزئة'`. Options come only from the registry (≤4, closed — Lane 2 contract); a free-text reply instead of a selection is treated as a **new question**. Expired clarification: `410 gone`.
 
 Boundary example — «ما القطاع التجاري الأكثر نمواً؟» → `200 kind:"boundary"`:
 
@@ -629,7 +629,7 @@ Activation body + response:
 
 ```json
 // POST …/activate
-{ "scope": { "session_uids": null, "provider": "SRC-PROV2", "from_version": 1 },
+{ "scope": { "session_uids": null, "provider": "provider_x", "from_version": 1 },
   "reason_ar": "اعتماد المزود الجديد بعد اجتياز معايير المقارنة (وثيقة 06)",
   "rebase_plan": { "reextract": true, "reverify_quotes": true } }
 // 202 → { "activation_id": "ACT-…", "rebase_job_id": "JOB-…", "sessions_affected": 11304 }

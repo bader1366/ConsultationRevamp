@@ -600,24 +600,26 @@ CREATE TABLE findings.session_extraction_state (   -- current-findings pointer, 
 
 ### 6.2 Finding kinds (seeded lookup `findings.finding_kind`)
 
-13 kinds are the doc 04 vocabulary [FACT doc 04 source tables]; +4 carried from GREENFIELD §8.3's list. Adding a kind = a migration + registry entry (I12); the lookup row carries `payload_schema_ref` (JSON Schema id) and `taxonomy_id` (nullable — which taxonomy classifies this kind, if any):
+13 kinds are the doc 04 vocabulary [FACT doc 04 source tables]; +4 carried from GREENFIELD §8.3's list. Adding a kind = a migration + registry entry (I12); the lookup row carries `payload_schema_ref` (JSON Schema id) and `taxonomy_id` (nullable — which taxonomy classifies this kind, if any).
 
-| kind | taxonomy | payload highlights (per-kind JSON Schema) |
+**This table is the normative payload contract.** The strict JSON Schemas in `schemas/extract_<kind>_v1.json` (doc 23 §9) are generated field-for-field from it — every field listed is `required` (null-union for optionality), every enum here is closed (I2), and no schema may carry a field or enum member absent from this table without a migration bumping `payload_schema_ref`. Common fields on every kind (not repeated per row): `quote` (verbatim, R7-gated), `turn_index`, `speaker_role(consultant/beneficiary/unknown)`, `confidence` (triage-only, never a gate — I18).
+
+| kind | taxonomy | payload fields (normative; enums closed) |
 |---|---|---|
-| `challenge` | CHAL | `challenge_text, severity, symptoms[], stated_cause, actual_ask` (CAP-C2 fields; empty in legacy for 0/67,082 rows — OD-05) |
-| `violation` | VIOL | `violation_class(behavioral/technical), severity(potential/confirmed)` — quote mandatory via CAP-B4 gate |
-| `satisfaction_signal` | SAT | `polarity(positive/negative/neutral), aspect` |
+| `challenge` | CHAL | `challenge_text:str · severity(low/medium/high) · symptoms[]:str · stated_cause:str|null · actual_ask:str|null` (CAP-C2 fields; empty in legacy for 0/67,082 rows — OD-05) |
+| `violation` | VIOL | `violation_class(behavioral/technical) · severity(potential/confirmed) · detection_indicator(unprofessional_tone/misleading_claim/unverified_as_fact/sarcasm/self_promotion/other)` — quote mandatory via CAP-B4 gate |
+| `satisfaction_signal` | SAT | `polarity(positive/negative/neutral) · aspect:str|null (سياق مقيِّد) · intensity(strong/moderate/weak) · explicitness(explicit/implicit)` — doc 14 §4.1's worked schema uses exactly these names |
 | `pressure_signal` | — (axis in payload) | `pressure_class(urgency/confusion/frustration/distress/other)` [REC doc 04 §5.7] |
-| `decision_point` | DEC | `decision_topic, maker(consultant/beneficiary/both), resolved(bool)` |
-| `impact_pattern` | IMP | `pattern_ref, direction(high/low)` |
-| `confusion_marker` | — | `position(final_10pct…), marker_family` |
-| `step_clarity` | — | `clarity(clear/partial/none), steps[]` |
-| `time_loss_span` | — | `span_start_ms, span_end_ms, loss_class` |
-| `government_mention` | — (→ `tax.entity`) | `entity_id(resolved) / raw_mention, is_friction, problem_category_id(CHAL)` |
-| `beneficiary_question` | — (→ QST clusters) | `question_text, answered(bool), answer_turn_index` |
-| `action_item` | — | `item_text, assignee_role, is_clear` |
-| `followup_requirement` | — | `requirement_text, due_hint` |
-| `topic` / `recommendation` / `automation_opportunity` / `risk_signal` | — | carried from GREENFIELD §8.3; same envelope |
+| `decision_point` | DEC | `decision_topic:str · maker(consultant/beneficiary/both) · resolved:bool` |
+| `impact_pattern` | IMP | `pattern_ref:IMP-id · direction(high/low) · position_zone(opening/body/closing_15pct)` |
+| `confusion_marker` | — | `position(final_20pct_or_5turns/elsewhere) · marker_family(incomprehension/what_next/still_unclear/inverted_positive) · negated:bool` (the E.2 negation-pair rule: «صار واضح» inverts) |
+| `step_clarity` | — | `clarity(clear/partial/none) · steps[]:{text:str, actor(consultant/beneficiary/joint), ordinal:int|null}` |
+| `time_loss_span` | — | `span_start_ms:int · span_end_ms:int · loss_class(repeated_explanation/long_non_speech/admin_digression/tool_fumbling/unresolved_tangent)` — same closed enum as `curated_analysis.args.loss_class` (doc 12 §5.3) |
+| `government_mention` | — (→ `tax.entity`) | `entity_id:ENT-id|null · raw_mention:str · is_friction:bool · problem_category_id:CHAL-id|null` |
+| `beneficiary_question` | — (→ QST clusters) | `question_text:str · answered:bool · answer_turn_index:int|null` |
+| `action_item` | — | `item_text:str · assignee_role(consultant/beneficiary/joint/unassigned) · is_clear:bool` |
+| `followup_requirement` | — | `requirement_text:str · due_hint:str|null` |
+| `topic` / `recommendation` / `automation_opportunity` / `risk_signal` | — | `label:str · detail:str|null` (+ `target(consultant/beneficiary)` on recommendation; `estimated_impact(low/medium/high)` on automation_opportunity; `severity(low/medium/high)` on risk_signal) — carried from GREENFIELD §8.3; same envelope |
 
 | Table | Purpose | PK | Natural/unique key | FKs (on delete) | Partition | Rows @bootstrap → +36mo |
 |---|---|---|---|---|---|---|

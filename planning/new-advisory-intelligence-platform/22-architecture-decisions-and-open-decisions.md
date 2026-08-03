@@ -209,7 +209,7 @@ All twenty ADRs carry status **recommended-for-acceptance**: they are planning r
 **Decision.** All generative calls route through one Groq client — a single egress choke point carrying the outbound payload gate (doc 16 §4). Role-based selection from `ops.model_registry`:
 - per-session structured extraction, Lane-3 map, Lane-1 planner, composer ⇒ `openai/gpt-oss-120b` with strict json_schema;
 - routing/normalization/high-volume triage ⇒ `openai/gpt-oss-20b`;
-- safety/policy screening ⇒ `gpt-oss-safeguard-20b`, benchmarked with a 120b prompt-based fallback (preview caveat);
+- safety/policy screening ⇒ `gpt-oss-120b` prompt-based **in production**; `gpt-oss-safeguard-20b` runs shadow-mode only until it graduates from preview (doc 14 §2.5 D3);
 - no production role for preview or deprecating models (`qwen3.6-27b`, `llama-3.3-70b`) [REC doc 14];
 - Batch API (50% discount, 24h–7d window) for backfills/re-extractions/benchmarks only — never user-accepted Lane-3 jobs.
 Every call logs model id, prompt sha, tokens, cost, latency (I17); a deprecation notice creates an ops task with replay evaluation before any swap.
@@ -334,6 +334,8 @@ During parallel authoring, three documents introduced new ODs under IDs that col
 | "OD-14" = Lane-3 artifact/collection visibility | doc 13 §9.6 and its risk register | **OD-23** (new ID) |
 | "OD-19" = Groq contractual data terms (DPA) | doc 16 §4.4 + summary table | **OD-19** (kept — declared with an explicit [NEW] header) |
 | "OD-19" = annotation staffing & qualification | doc 15 §10 | **OD-24** (new ID) |
+| "OD-22" = on-call staffing + notification channels | doc 19 §5.2/§10 (and doc 20 cutover checklist "rota") | **OD-26** (new ID) |
+| "OD-23" = legacy analytical-route containment scope/timing | doc 20 §0(5), §2.5, §4-G5, §5, §7 | **OD-27** (new ID) |
 
 ### 3.2 The register
 
@@ -516,6 +518,20 @@ Fields per entry: question · decision owner (role at Monsha'at) · safe working
 
 ---
 
+
+**OD-26 — On-call staffing and notification channels.** *(Remapped from doc 19 "OD-22".)*
+- *Question:* on-call rotation shape inside the government network (24/7 vs business hours) and the approved notification channels (email / authority messaging platform / SMS) for SEV alerts.
+- *Owner:* platform owner + operations lead.
+- *Assumption:* business-hours 2-person ops rotation; notifications via approved email + the authority's messaging platform; out-of-hours SEV-1 auto-degrades to safe states (circuit to Lane 0, queue pause) [ASSUME OD-26 — doc 19 §5.2].
+- *Impact if wrong:* alert routing config, doc 19 §6 degraded-state depth, doc 21 staffing plan.
+- *Needed by:* P6 (pilot operations).
+
+**OD-27 — Legacy analytical-route containment scope, timing, and authority.** *(Remapped from doc 20 "OD-23".)*
+- *Question:* containment mechanism for legacy analytical routes after G4 (redirect banner vs network restriction vs route removal), its timing, and who owns the legacy-side change; legacy decommissioning is explicitly out of scope for NIP.
+- *Owner:* product owner + legacy system owner.
+- *Assumption:* banner-redirect at G4+60d, network restriction at G4+120d; the legacy system keeps running for its non-analytical functions indefinitely [ASSUME OD-27 — doc 20 §4-G5/§7].
+- *Impact if wrong:* G5 gate definition, doc 20 risk R8 (legacy stays load-bearing), doc 21 P7 deliverables, doc 22 §5 item 19.
+- *Needed by:* P7 (containment gate G5).
 ## 4. Explicit assumption log
 
 Every load-bearing `[ASSUME]` the package builds on, in one place. Entries carrying an OD ID resolve when that OD closes. Entries marked ✻ are design-level assumptions with deliberately **no** OD — the design absorbs either outcome; they are logged for honesty, not decision-chasing.
@@ -589,10 +605,10 @@ Approval classes: **G1** = blocks implementation start; **G2** = blocks a named 
 
 ## 6. Maintenance rules for this register
 
-1. **New ODs**: next free number (OD-26…), never reuse; every new `[ASSUME]` in any document must reference an OD here, or be logged in §4 as a ✻ design-level assumption with its absorbing design named.
+1. **New ODs**: next free number (OD-28…), never reuse; every new `[ASSUME]` in any document must reference an OD here, or be logged in §4 as a ✻ design-level assumption with its absorbing design named.
 2. **Closing an OD**: record decision, date, decider, and which documents' assumptions flip; closed ODs stay in the table marked **CLOSED** — history is append-only, matching ADR-0012's doctrine.
 3. **ADR changes**: an accepted ADR is amended only by a superseding ADR (`ADR-0021…`) that names what it replaces; no in-place edits after owner acceptance. Rejected ADRs are recorded with the rejection rationale, not deleted.
-4. **Consistency-pass duty** (from §3.1): **executed 2026-08-03** — docs 07/16/17 "OD-14/BI" remapped to **OD-22**; doc 13 "OD-14" to **OD-23**; doc 15 "OD-19" to **OD-24**; verified by grep (the collision patterns survive only in this register's §3.1 history table and 00-INDEX's resolution log).
+4. **Consistency-pass duty** (from §3.1): **executed 2026-08-03** — docs 07/16/17 "OD-14/BI" remapped to **OD-22**; doc 13 "OD-14" to **OD-23**; doc 15 "OD-19" to **OD-24**; verified by grep (the collision patterns survive only in this register's §3.1 history table and 00-INDEX's resolution log). A second pass on 2026-08-03 remapped the collisions the re-run reviewers found: doc 19 "OD-22" (on-call) → **OD-26**; doc 20 "OD-23" (containment) → **OD-27**.
 5. **Cadence**: the OD register is reviewed at every phase-exit gate (doc 21); any OD past its needed-by phase without a decision escalates to the platform owner with its safe assumption restated and its accumulating cost quantified.
 
 ---
