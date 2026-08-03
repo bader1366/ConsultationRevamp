@@ -1,8 +1,8 @@
 # 08 — Data Model & ERD
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02, amended 2026-08-03 (Owner Amendment entity mapping + additions, §19) · **Author:** Planning package (Fable 5)
 **Depends on:** 04, 05, 06, 07 · **Feeds:** 09, 10, 11, 12, 13, 15, 16, 17, 19, 20, 22, 23
-**Sources used:** GREENFIELD §8.2–§8.3, §9.1–§9.2, §10.7, §11.1–11.10, §15.2–15.4, §19.1; MASTER_PROMPT §4.3 (normative taxonomy storage + corpus snapshot + pack identity), §5.2 (result envelope), §5.3 (Lane 3); CORE-BRIEF §6 (binding schema names), §11 (volume baselines), §12 (legacy defect list); arch/02 (legacy data-model evidence); doc 05 §1.3/§1.4/§10.3 (ingest DDL + PII classes); doc 06 §2.3 (transcript DDL); doc 04 (source-table vocabulary per capability)
+**Sources used:** GREENFIELD §8.2–§8.3, §9.1–§9.2, §10.7, §11.1–11.10, §15.2–15.4, §19.1; MASTER_PROMPT §4.3 (normative taxonomy storage + corpus snapshot + pack identity), §5.2 (result envelope), §5.3 (Lane 3); CORE-BRIEF §6 (binding schema names), §11 (volume baselines), §12 (legacy defect list); arch/02 (legacy data-model evidence); doc 05 §1.3/§1.4/§10.3 (ingest DDL + PII classes); doc 06 §2.3 (transcript DDL); doc 04 (source-table vocabulary per capability); Owner Amendment 2026-08-03 §4.3 (run record), §5.5 (finding/case/event), §6.5 (detector releases), §7 (infographic), §12-08 (entity list), §13 (assumptions)
 
 This document is the **canonical data model** for NIP: one PostgreSQL 16/17 database, eleven schemas, every table named, keyed, constrained, indexed, sized, and PII-classified. Docs 05/06 published *sketches* of their local tables and deferred final DDL here; where their sketches and this document differ, **this document wins** and the differences are listed in §0.3. Nothing here is production code — DDL blocks are implementation-ready sketches for the Alembic migrations that doc 23 sequences [DECISION ADR-0004: Alembic is the only migration mechanism; the legacy DB could not be rebuilt from source — F3, arch/02 §9].
 
@@ -78,11 +78,11 @@ flowchart LR
 | Role | May write | May read | Never |
 |---|---|---|---|
 | `nip_worker` (enrichment/jobs/ingest) | `ingest`, `core`, `transcript` (INSERT-only on `turn`), `findings`, `tax`, `jobs`, `packs`, `evidence`, `ops` (append tables) | everything incl. `legacy_snapshot` | UPDATE/DELETE on C6/C7 tables |
-| `nip_web` (serving API) | `serve` only | `core`, `transcript`, `findings`, `tax`, `packs`, `evidence`, `jobs` (job status), `ops.model_registry` read-only | any write outside `serve`; any read of restricted P3 columns (§15) |
+| `nip_web` (serving API) | `serve` only (+ one narrow amendment exception: `ops.notification_subscription`, §19.8) | `core`, `transcript`, `findings`, `tax`, `packs`, `evidence`, `jobs` (job status), `ops.model_registry` read-only | any write outside `serve` beyond the §19.8 exception; any read of restricted P3 columns (§15) |
 | `nip_migrator` (Alembic) | DDL everywhere | — | run outside deploy pipeline |
 | `nip_readonly_bi` | — | masked views only (§15.4) | base tables with P2/P3 |
 
-Table count at launch: **78 tables** across 10 managed schemas (+ `legacy_snapshot` restored verbatim). Every table appears in exactly one reference table below. (The count includes four tables owned by sibling documents and absorbed into this census per doc 23 §0.2: `serve.capability_registry` + `serve.capability_paraphrase` — the loaded capability-registry projection and its paraphrase set, DDL in doc 04 §1.3, migration 0009 — and `evidence.custom_collection` + `evidence.custom_collection_unit` — question-scoped retrieval collections, DDL in doc 13 §9.0, migration 0010.)
+Table count at launch: **98 tables** across 10 managed schemas (+ `legacy_snapshot` restored verbatim) — **78 before the 2026-08-03 Owner Amendment, 98 after**: the amendment adds 20 tables (migrations 0014/0015), specified in §19. Every table appears in exactly one reference table below. (The pre-amendment count includes four tables owned by sibling documents and absorbed into this census per doc 23 §0.2: `serve.capability_registry` + `serve.capability_paraphrase` — the loaded capability-registry projection and its paraphrase set, DDL in doc 04 §1.3, migration 0009 — and `evidence.custom_collection` + `evidence.custom_collection_unit` — question-scoped retrieval collections, DDL in doc 13 §9.0, migration 0010.)
 
 ---
 
@@ -1282,6 +1282,8 @@ CREATE TABLE ops.review_event (                 -- append-only decision history 
 | `data_quality_observation` | typed DQ feed → CAP-D9 (doc 05 §10.3 DDL adopted final) | surrogate | no | ~10⁴/y |
 | `registry_snapshot` | read-only mirror of the code-owned capability/metric registries (I12), refreshed at deploy; serving joins/validates against it, **the repo remains the source of truth** | `(registry_kind, entry_id, code_version)` | no | 10²/deploy |
 
+Amendment additions to `ops` (2026-08-03, DDL + reference rows in §19): `pipeline_run` + `pipeline_step_run` (§19.2), `data_quality_issue` + `reconciliation_case` (§19.3), `label_dataset` + `label_dataset_item` + `detector_candidate` + `detector_release` + `shadow_result` (§19.5), `notification_subscription` + `notification_delivery` (§19.8).
+
 ---
 
 ## 13. Domain `legacy_snapshot` — one-time bootstrap, read-only
@@ -1446,8 +1448,488 @@ Composite b-trees lead with the pruning column (`session_month`, `kind`, `status
 | OD-14 consultant national-id retention | restricted `consultant_source_ref` column vs hash-only | retain restricted, hash elsewhere |
 | **OD-15 (new, this doc)** beneficiary cross-session linkage | `beneficiary_identity.beneficiary_key` linkage NULL at launch; repeat-beneficiary analytics unavailable | no linkage until owner approves hash-based linking; impact: CAP-D4/D7 cannot segment by repeat visitors |
 | OD-10 publication authority | `publication.published_by` free-identity now; role gate in app layer | product owner signs |
+| OD-28 nightly run time + SLA (2026-08-03) | `ops.pipeline_run.scheduled_for` default; SLO row doc 09 §6.7 | 02:00 Asia/Riyadh, configurable |
+| OD-30 review SLA + assignment (2026-08-03) | `findings.review_case.sla_due_at` computation; `review_assignment` roles | 7d normal / 2d high; assignment by review lead |
+| OD-33 detector release cadence (2026-08-03) | `ops.detector_release` creation rhythm; no schema impact | monthly or on gate-pass, whichever is less frequent |
+| OD-34 Action Center ownership (2026-08-03) | `serve.service_improvement_action.owner_sub` role gate (app layer) | service owner owns; leadership sees aggregates |
+| OD-29 infographic channels (2026-08-03) | `ops.notification_subscription.channel` enum seed | Portal + approved Email; others later |
 
 Structural revisit triggers (any one fires a doc-22 ADR review): second physical database requested (breaks ADR-0003); >10M rows in `transcript.turn` (partitioning); a second embedding model in *simultaneous* production use (active_index becomes per-capability); federation of consultant identity with an external IdM (consultant dimension ownership moves).
+
+---
+
+## 19. Owner Amendment (2026-08-03) — entity mapping and additions (migrations 0014/0015)
+
+The Amendment's §12-08 entity list is integrated here under one rule: **map to an existing table wherever coverage already exists; add only what is genuinely missing** — the Amendment itself says table names are not the requirement, the use cases, versioning, traceability, and no-overwrite are. Census moves **78 → 98 tables** (20 additions). New tables land in **migration 0014** (consolidation-run record + steward queue + violation-review case layer + learning pipeline) and **migration 0015** (actions + notifications + infographic) — doc 23 §6 carries the same numbers; Alembic ledger order is doc 23's, execution timing follows the VS re-sequencing (docs 21/25).
+
+### 19.1 Entity mapping — every Amendment §12-08 entity, dispositioned
+
+| Amendment entity | Disposition | Where |
+|---|---|---|
+| `pipeline_run` | **Map + add.** Per-source runs already exist as `ingest.ingestion_run` (kept, per-adapter grain). The **cross-source Nightly Consolidation Run record** is genuinely missing → new `ops.pipeline_run`; `ingest.ingestion_run` gains a nullable `pipeline_run_id` FK linking every adapter run to its owning consolidation run (0014 ALTER) | §19.2 |
+| `pipeline_step_run` | **Add** — per-step record of the 16 mandatory nightly steps | §19.2 |
+| `source_watermark` | **Already explicit — no new table.** `ingest.source_cursor` (doc 05 §1.3) is the named-watermark-per-source store; per-run before/after snapshots live in `ops.pipeline_run.source_watermarks` | §2 |
+| `dead_letter_item` | **Exists** — `ingest.dlq_item` (typed error classes, replay states, steward resolution) | §2 |
+| `data_quality_issue` | **Map + add.** The raw typed feed exists (`ops.data_quality_observation`, unchanged). The steward-owned *work item* (assignment, SLA, lifecycle) is missing → new `ops.data_quality_issue` | §19.3 |
+| `reconciliation_case` | **Map + add.** Queues Q1–Q5 exist as views over resolution state (doc 05 §10.1); their durable case home (disposition, assignee, SLA, append-only history) is missing → new `ops.reconciliation_case` | §19.3 |
+| `violation_finding` | **Exists** — `findings.finding` with `kind='violation'` (§6); 0014 adds a nullable `review_case_id` FK column linking each violation finding to its review case | §6, §19.4 |
+| `review_case` / `review_event` / `review_assignment` | **Add** — the violation-review **case layer** `findings.review_case` + `findings.review_event` + `findings.review_assignment`, deliberately distinct from the `ops.review_*` governance loop (reconciliation paragraph in §19.4) | §19.4 |
+| `missed_violation_report` | **Add** — `findings.missed_violation_report` («إضافة اشتباه لم يرصده النظام», CAP-OPS-06, SCR-17, PB-010) | §19.4 |
+| `label_dataset` / `label_dataset_item` / `detector_candidate` / `detector_release` / `shadow_result` | **Add** — the governed detector-learning pipeline (SD-22), all five in `ops` | §19.5 |
+| `monthly_infographic` / `infographic_section` | **Add** — `packs.monthly_infographic` as a 1:1 **pack subtype** (argued below) + `packs.infographic_section` | §19.6 |
+| `publication_event` | **Exists / reused** — `packs.publication` (append-only pointer, supersession, cause codes) is the publication event log for infographics too; sign-off events reuse `ops.review_item(item_kind='publication_signoff')` (ADR-0012) | §10, §19.6 |
+| `service_improvement_action` / `action_event` / `action_metric_baseline` | **Add** — Action Center (CAP-OPS-09, SCR-19, PB-015) in `serve` (the plane whose API creates and updates them; write matrix §1) | §19.7 |
+| `notification_subscription` / `notification_delivery` | **Add** — `ops.notification_subscription` + `ops.notification_delivery` (CAP-OPS-10 «صباحيات الخدمة», digests, alerts; PB-016) | §19.8 |
+
+```mermaid
+erDiagram
+    PIPELINE_RUN ||--o{ PIPELINE_STEP_RUN : "16 steps"
+    PIPELINE_RUN ||--o{ INGESTION_RUN : "per-source runs link up"
+    PIPELINE_RUN ||--o{ REVIEW_CASE : "step 11 opens/updates"
+    ADVISORY_SESSION ||--o{ REVIEW_CASE : ""
+    REVIEW_CASE ||--o{ REVIEW_EVENT : "append-only decisions"
+    REVIEW_CASE ||--o{ REVIEW_ASSIGNMENT : "append-only"
+    FINDING }o--o| REVIEW_CASE : "violation findings grouped"
+    MISSED_VIOLATION_REPORT }o--o| REVIEW_CASE : "accepted → case"
+    LABEL_DATASET ||--o{ LABEL_DATASET_ITEM : "immutable membership"
+    REVIEW_EVENT }o..o{ LABEL_DATASET_ITEM : "labels drawn (versioned)"
+    LABEL_DATASET ||--o{ DETECTOR_CANDIDATE : "built on"
+    DETECTOR_CANDIDATE ||--o{ SHADOW_RESULT : "shadow vs baseline"
+    DETECTOR_CANDIDATE ||--o| DETECTOR_RELEASE : "promoted"
+    PACK ||--o| MONTHLY_INFOGRAPHIC : "1:1 subtype (CAP-OPS-08)"
+    MONTHLY_INFOGRAPHIC ||--o{ INFOGRAPHIC_SECTION : "5 sections + footer"
+    PACK ||--o{ PUBLICATION : "reused for infographic publication"
+    SERVICE_IMPROVEMENT_ACTION ||--o{ ACTION_EVENT : "append-only"
+    SERVICE_IMPROVEMENT_ACTION ||--o{ ACTION_METRIC_BASELINE : "baseline + follow-ups"
+    NOTIFICATION_SUBSCRIPTION ||--o{ NOTIFICATION_DELIVERY : "append-only"
+    PIPELINE_RUN ||--o{ NOTIFICATION_DELIVERY : "digest cites its run"
+```
+
+### 19.2 Nightly Consolidation Run record — `ops.pipeline_run` + `ops.pipeline_step_run` (migration 0014)
+
+The run record the Amendment §4.3 requires, wrapping (not replacing) the per-source `ingest.ingestion_run` grain. Workflow semantics in doc 09 §10; SCR-14 reads these rows.
+
+```sql
+CREATE TABLE ops.pipeline_run (
+  pipeline_run_id  bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  run_uid          text NOT NULL UNIQUE,            -- 'NCR-2026-08-03-a'; cited in digests, SCR-14, manifests
+  run_kind         text NOT NULL DEFAULT 'nightly' CHECK (run_kind IN
+                     ('nightly','hourly_incremental','manual','close_month','close_quarter')),
+  business_date    date NOT NULL,                   -- the day being closed (Asia/Riyadh)
+  scheduled_for    timestamptz NOT NULL,            -- 02:00 Asia/Riyadh, configurable [ASSUME OD-28]
+  started_at timestamptz, finished_at timestamptz,
+  status           text NOT NULL DEFAULT 'queued' CHECK (status IN
+                     ('queued','running','partial','succeeded','failed','cancelled','superseded')),  -- exact Amendment states
+  superseded_by    bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT,
+  source_watermarks jsonb NOT NULL DEFAULT '{}',    -- per-source {before, after} snapshot of ingest.source_cursor
+  counts           jsonb NOT NULL DEFAULT '{}',     -- pulled/new/updated/rejected per source; sessions complete/excluded/late
+  versions_stamp   jsonb NOT NULL,                  -- {code, contract_versions, model_ids, prompt_shas, taxonomy_versions, detector_release}
+  attempts         int NOT NULL DEFAULT 0,          -- whole-run re-invocations
+  error_summary    jsonb NOT NULL DEFAULT '[]',     -- classified errors (cause → count, worst examples)
+  manifest_uri     text,                            -- MinIO run manifest (downloadable from SCR-14)
+  triggered_by     text NOT NULL                    -- 'scheduler' | 'opsctl:<user>'
+);
+-- one authoritative (non-superseded) run per kind+day; retries after failure allowed:
+CREATE UNIQUE INDEX uq_pipeline_run_active ON ops.pipeline_run (run_kind, business_date)
+  WHERE status NOT IN ('superseded','cancelled','failed');
+CREATE INDEX ix_pipeline_run_recent ON ops.pipeline_run (run_kind, business_date DESC);
+
+CREATE TABLE ops.pipeline_step_run (
+  pipeline_run_id bigint NOT NULL REFERENCES ops.pipeline_run ON DELETE RESTRICT,
+  step_no         smallint NOT NULL CHECK (step_no BETWEEN 1 AND 16),   -- the 16 mandatory steps (doc 09 §10.2)
+  step_id         text NOT NULL,                    -- 'preflight' … 'close_trigger' (closed list, doc 09 §10.2)
+  status          text NOT NULL DEFAULT 'queued' CHECK (status IN
+                    ('queued','running','partial','succeeded','failed','skipped','cancelled')),
+  started_at timestamptz, finished_at timestamptz,
+  counts          jsonb NOT NULL DEFAULT '{}',      -- step-level counters (listed/fetched/kept/dropped…)
+  error_class     text, error_detail jsonb,
+  attempts        smallint NOT NULL DEFAULT 0,
+  dlq_item_ids    bigint[] NOT NULL DEFAULT '{}',   -- ingest.dlq_item rows opened by this step
+  PRIMARY KEY (pipeline_run_id, step_no)
+);
+-- 0014 ALTER: ingest.ingestion_run ADD COLUMN pipeline_run_id bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT;
+```
+
+Append-only note: run/step rows are **workflow state** (the orchestrator updates status in place, like `ingest.session_stage_state`); every transition also writes `ops.audit_event` (`job_started`/`job_finished` actions), so history is reconstructable without a mutable-history table. Resumability lives in these rows + task idempotency keys — never JSON files or process memory [DECISION Amendment §4.4-9; doc 09 §0.3].
+
+### 19.3 Steward queue — `ops.data_quality_issue` + `ops.reconciliation_case` (migration 0014)
+
+The Amendment §3.3-4 queue «مشكلات الربط والبيانات», layered **on top of** the existing raw feed (`ops.data_quality_observation`, unchanged) and the Q1–Q5 views (doc 05 §10.1): observations are signals; these two tables are the steward's durable work items with assignment, SLA, and no-overwrite dispositions.
+
+```sql
+CREATE TABLE ops.data_quality_issue (
+  issue_id      bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  issue_key     char(64) NOT NULL UNIQUE,          -- sha256(source_id|rule_id|entity_kind|entity_ref) — re-detections attach, not duplicate
+  source_id     text NOT NULL, rule_id text NOT NULL,
+  entity_kind   text NOT NULL, entity_ref text NOT NULL,
+  severity      text NOT NULL CHECK (severity IN ('WARN','BLOCK')),
+  state         text NOT NULL DEFAULT 'open' CHECK (state IN
+                  ('open','triaged','in_progress','resolved','suppressed','wont_fix')),
+  assigned_to   text, sla_due_at timestamptz,       -- steward SLA [REC: 7d WARN / 72h BLOCK; revisit with OD-30 staffing]
+  observation_count int NOT NULL DEFAULT 1,
+  first_observation_id bigint REFERENCES ops.data_quality_observation ON DELETE RESTRICT,
+  last_seen_run bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT,
+  resolution_note text, resolved_by text, resolved_at timestamptz,
+  CONSTRAINT ck_dqi_resolution CHECK ((state IN ('resolved','suppressed','wont_fix')) = (resolution_note IS NOT NULL)),
+  opened_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_dqi_open ON ops.data_quality_issue (source_id, sla_due_at) WHERE state IN ('open','triaged','in_progress');
+
+CREATE TABLE ops.reconciliation_case (
+  case_id   bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  queue     text NOT NULL CHECK (queue IN ('Q1_unmatched_provider','Q2_unmatched_internal',
+              'Q3_unmatched_reference','Q4_ambiguous','Q5_attribute_conflict')),
+  -- exactly one typed target (the §12.3 ck_one_target pattern; no untyped pointers):
+  provider_meeting_map_id bigint REFERENCES core.provider_meeting_map ON DELETE RESTRICT,
+  internal_session_map_id bigint REFERENCES core.internal_session_map ON DELETE RESTRICT,
+  advisory_session_id     bigint REFERENCES core.advisory_session     ON DELETE RESTRICT,
+  observation_id          bigint REFERENCES ops.data_quality_observation ON DELETE RESTRICT,
+  CONSTRAINT ck_recon_one_target CHECK (
+    (provider_meeting_map_id IS NOT NULL)::int + (internal_session_map_id IS NOT NULL)::int
+    + (advisory_session_id IS NOT NULL)::int + (observation_id IS NOT NULL)::int = 1),
+  evidence  jsonb NOT NULL,                         -- claims + candidates snapshot (steward decides from this, no re-derivation)
+  state     text NOT NULL DEFAULT 'open' CHECK (state IN ('open','assigned','disposed')),
+  assigned_to text, sla_due_at timestamptz NOT NULL, -- Q1/Q2 7d, Q4 3d [REC doc 05 §10.1]
+  disposition text CHECK (disposition IN ('linked','not_an_advisory_session','no_recording_expected',
+              'mapping_added','source_bug_reported','duplicate_merged','deferred')),
+  disposed_by text, disposed_at timestamptz,
+  CONSTRAINT ck_recon_disposed CHECK ((state = 'disposed') = (disposition IS NOT NULL)),
+  opened_at timestamptz NOT NULL DEFAULT now(),
+  opened_by_run bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT
+);
+CREATE INDEX ix_recon_open ON ops.reconciliation_case (queue, sla_due_at) WHERE state <> 'disposed';
+```
+
+No-overwrite rule: a disposed case is never edited or reopened in place — a recurrence opens a **new** case row (append semantics at case granularity); the identity changes themselves remain in `core.identity_resolution_event`. The Q1–Q5 views stay the real-time population lens; cases are minted from them by nightly step 6 (doc 09 §10.2) so steward work survives view churn.
+
+### 19.4 Violation-review case layer — `findings.review_case` / `review_event` / `review_assignment` / `missed_violation_report` (migration 0014)
+
+Implements SD-20 and Amendment §5.5's separation: `violation_finding` (exists: `findings.finding kind='violation'`) ≠ `review_case` (groups related findings of one session for review) ≠ `review_event` (append-only decision/transition). Decisions are **finding-level** — one session can hold two findings, one accepted and one rejected [DECISION Amendment §5.5].
+
+**Reconciliation of the two review structures.** The package now has exactly two review mechanisms with disjoint jurisdictions, by design. `ops.review_item`/`ops.review_event` (§12.3, ADR-0012) remains the single **governance** loop for artifacts that change what the platform *says the world means* — taxonomy proposals, cluster labels, entity aliases, answer keys, publication sign-offs. `findings.review_case`/`review_event`/`review_assignment` is the **violation-review product surface** («اشتباه مخالفة», SCR-08, CAP-OPS-05): case aggregation per session, reviewer assignment, SLA clocks, the six closed decisions, basis fingerprints, and stale transitions — workflow richness the generic loop deliberately lacks. To prevent double queues, violation findings do **not** mint `ops.review_item(item_kind='finding_review')` rows; `finding_review` remains available for non-violation finding families only, and `findings.finding.review_status` stays the serving gate flag (G-REV-01), now written exclusively by the case layer for `kind='violation'`. Both structures share the doctrine: append-only decisions, identity + timestamp + version stamps, no overwrite, staleness by content hash.
+
+```sql
+CREATE TABLE findings.review_case (
+  review_case_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  case_uid    text NOT NULL UNIQUE,                 -- 'VRC-2026-00042'; cited on SCR-08
+  advisory_session_id bigint NOT NULL REFERENCES core.advisory_session ON DELETE RESTRICT,
+  case_state  text NOT NULL DEFAULT 'new' CHECK (case_state IN
+    ('new','in_review','second_review','escalated_policy_owner','decided','stale_needs_review','closed')),
+  priority    text NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','high')),
+  sla_due_at  timestamptz NOT NULL,                 -- 7d normal / 2d high [ASSUME OD-30]
+  basis_fingerprint char(64) NOT NULL,              -- sha256 over (finding ids ⊕ transcript_source_ids ⊕ extraction_run_ids)
+  detector_release_id bigint REFERENCES ops.detector_release ON DELETE RESTRICT,  -- detector version at open (Amendment §5.2)
+  reopened_from bigint REFERENCES findings.review_case ON DELETE RESTRICT,        -- stale chain: new case, old retained (doc 06 §4.8.1)
+  opened_at   timestamptz NOT NULL DEFAULT now(),
+  opened_by_run bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT             -- nightly step 11
+);
+-- idempotency (Amendment §4.6: re-running a period never duplicates cases):
+CREATE UNIQUE INDEX uq_review_case_basis ON findings.review_case (advisory_session_id, basis_fingerprint);
+CREATE INDEX ix_review_case_queue ON findings.review_case (case_state, priority, sla_due_at)
+  WHERE case_state NOT IN ('decided','closed');
+-- 0014 ALTER: findings.finding ADD COLUMN review_case_id bigint REFERENCES findings.review_case ON DELETE RESTRICT;
+--             (populated for kind='violation' only; groups a session's related violation findings under one case)
+
+CREATE TABLE findings.review_event (                -- append-only (C6): REVOKE UPDATE, DELETE
+  review_case_id bigint NOT NULL REFERENCES findings.review_case ON DELETE RESTRICT,
+  seq            integer NOT NULL,
+  finding_id     bigint, finding_session_month date,          -- NULL for case-level transitions
+  FOREIGN KEY (finding_id, finding_session_month) REFERENCES findings.finding ON DELETE RESTRICT,
+  event_kind     text NOT NULL CHECK (event_kind IN
+    ('case_opened','assigned','decision','state_transition','stale_marked',
+     'second_review_requested','policy_referral','comment')),
+  decision       text CHECK (decision IN
+    ('true_violation',          -- «مخالفة صحيحة»
+     'not_a_violation',         -- «ليست مخالفة»
+     'reclassify',              -- «إعادة تصنيف»
+     'needs_second_review',     -- «تحتاج مراجعة ثانية»
+     'insufficient_evidence',   -- «أدلة غير كافية»
+     'refer_policy_owner')),    -- «إحالة لمالك السياسة»
+  reclassify_to_category_id text REFERENCES tax.taxonomy_category ON DELETE RESTRICT,
+  reason_code    text,                              -- closed governed list (doc 10 owns the enum; doc 18 renders it)
+  note_ar        text,                              -- optional/mandatory per decision (mandatory on reject/reclassify)
+  decided_by     text NOT NULL, decided_at timestamptz NOT NULL DEFAULT now(),
+  basis_fingerprint char(64) NOT NULL,              -- what the reviewer actually saw (text + extraction + detector versions)
+  detector_release_id bigint REFERENCES ops.detector_release ON DELETE RESTRICT,
+  taxonomy_version integer,
+  CONSTRAINT ck_rev_decision CHECK ((event_kind = 'decision') = (decision IS NOT NULL)),
+  CONSTRAINT ck_rev_decision_reason CHECK (decision IS NULL OR reason_code IS NOT NULL),
+  CONSTRAINT ck_rev_decision_target CHECK (decision IS NULL OR finding_id IS NOT NULL),  -- decisions are finding-level
+  CONSTRAINT ck_rev_reclass CHECK ((decision = 'reclassify') = (reclassify_to_category_id IS NOT NULL)),
+  PRIMARY KEY (review_case_id, seq)
+);
+
+CREATE TABLE findings.review_assignment (           -- append-only; release = stamp, never delete
+  review_case_id bigint NOT NULL REFERENCES findings.review_case ON DELETE RESTRICT,
+  seq        integer NOT NULL,
+  assignee   text NOT NULL,                         -- OIDC sub
+  role       text NOT NULL CHECK (role IN ('reviewer','second_reviewer','adjudicator','policy_owner')),
+  assigned_by text NOT NULL,                        -- review lead [ASSUME OD-30]
+  assigned_at timestamptz NOT NULL DEFAULT now(),
+  released_at timestamptz,
+  PRIMARY KEY (review_case_id, seq)
+);
+
+CREATE TABLE findings.missed_violation_report (     -- «إضافة اشتباه لم يرصده النظام» (Amendment §6.3; CAP-OPS-06; SCR-17)
+  report_id  bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  advisory_session_id  bigint NOT NULL REFERENCES core.advisory_session ON DELETE RESTRICT,
+  transcript_source_id bigint NOT NULL REFERENCES transcript.transcript_source ON DELETE RESTRICT,  -- text basis pinned
+  turn_index_start int NOT NULL, turn_index_end int NOT NULL CHECK (turn_index_end >= turn_index_start),
+  quote_text text,                                  -- optional verbatim anchor; R7-verified when present
+  claimed_category_id  text REFERENCES tax.taxonomy_category ON DELETE RESTRICT,  -- NULL = «نوع جديد»
+  new_type_proposal_id bigint REFERENCES tax.proposal ON DELETE RESTRICT,         -- R-P1 path for new types
+  CONSTRAINT ck_mvr_type CHECK ((claimed_category_id IS NULL) = (new_type_proposal_id IS NOT NULL)),
+  reason_ar  text NOT NULL,
+  reported_by text NOT NULL, reported_at timestamptz NOT NULL DEFAULT now(),
+  state text NOT NULL DEFAULT 'submitted' CHECK (state IN
+    ('submitted','under_second_review','accepted_as_finding','rejected','withdrawn')),
+  resulting_review_case_id bigint REFERENCES findings.review_case ON DELETE RESTRICT,
+  label_class text NOT NULL DEFAULT 'missed_false_negative'   -- feeds §19.5 datasets (Amendment §6.2-4)
+);
+```
+
+Serving rules unchanged in spirit, tightened in wording: a case or finding in any suspected state renders **only** as «اشتباه مخالفة» with the fixed disclaimer; leadership numbers count `true_violation`-decided findings only, with the open-queue size as a separate figure (SD-19/SD-20; G-REV-01).
+
+### 19.5 Governed detector learning — `ops.label_dataset` / `label_dataset_item` / `detector_candidate` / `detector_release` / `shadow_result` (migration 0014)
+
+SD-22 storage: review decisions become **versioned immutable datasets**; candidates are evaluated offline, shadowed, human-adjudicated, promoted with a documented decision, canaried, monitored, and instantly rollback-able. No reviewer click ever changes production behaviour directly — production behaviour changes only through a `detector_release` row. Consultant names/ratings are never detector features (SD-22; the `spec` excludes them structurally and doc 14's prompt contract enforces it).
+
+```sql
+CREATE TABLE ops.label_dataset (
+  dataset_id   bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  dataset_uid  text NOT NULL UNIQUE,               -- 'DS-VIOL-2026-09-v3'
+  target       text NOT NULL DEFAULT 'violation_detector',
+  version      integer NOT NULL,
+  UNIQUE (target, version),                        -- dense versions per target
+  spec         jsonb NOT NULL,                     -- label-source classes drawn (the 8 of Amendment §6.2), strata, window, sampler version (EXP-11)
+  item_count   integer NOT NULL,
+  manifest_sha char(64) NOT NULL,                  -- content hash over ordered membership → immutability is checkable
+  status       text NOT NULL DEFAULT 'active' CHECK (status IN
+                 ('building','active','invalidated_partial','retired')),
+  built_by     text NOT NULL, built_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE ops.label_dataset_item (               -- IMMUTABLE membership: REVOKE UPDATE beyond the invalidation trio, DELETE never
+  dataset_id bigint NOT NULL REFERENCES ops.label_dataset ON DELETE RESTRICT,
+  item_seq   integer NOT NULL,
+  advisory_session_id bigint NOT NULL REFERENCES core.advisory_session ON DELETE RESTRICT,
+  finding_id bigint, finding_session_month date,    -- NULL for unflagged-negative sessions
+  FOREIGN KEY (finding_id, finding_session_month) REFERENCES findings.finding ON DELETE RESTRICT,
+  transcript_source_id bigint NOT NULL REFERENCES transcript.transcript_source ON DELETE RESTRICT,  -- text basis pinned at build
+  label_class text NOT NULL CHECK (label_class IN
+    ('positive','hard_negative','reclassified','missed_false_negative',
+     'unflagged_random','disagreement','boundary','model_disagreement')),   -- Amendment §6.2's eight sources
+  label_category_id text REFERENCES tax.taxonomy_category ON DELETE RESTRICT,
+  split text NOT NULL CHECK (split IN ('train','validation','holdout')),    -- holdout flag lives here
+  source_event_ref jsonb NOT NULL,                  -- provenance: review_event / missed_violation_report / sampler run
+  invalidated boolean NOT NULL DEFAULT false,       -- rebase blast radius: MARKED, never deleted (doc 06 §4.8.2)
+  invalidated_reason text, invalidated_at timestamptz,
+  CONSTRAINT ck_ldi_invalid CHECK (invalidated = (invalidated_reason IS NOT NULL)),
+  PRIMARY KEY (dataset_id, item_seq)
+);
+-- No-session-leakage constraint (SD-22 / Amendment §6.5): split is assigned per SESSION, not per item —
+-- the builder assigns session→split before drawing items, and a structural test asserts
+-- COUNT(DISTINCT split) = 1 per (dataset_id, advisory_session_id). Holdout items are excluded
+-- from all training/tuning by the eval harness (doc 15) and their sessions never re-enter train in later versions
+-- of the same target while the holdout is live.
+
+CREATE TABLE ops.detector_candidate (
+  candidate_id  bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  candidate_uid text NOT NULL UNIQUE,              -- 'DET-VIOL-cand-014'
+  target        text NOT NULL DEFAULT 'violation_detector',
+  change_kind   text[] NOT NULL,                   -- ⊆ {prompt, model, rules, thresholds, taxonomy} (Amendment §6.5)
+  model_id text, model_role text,
+  FOREIGN KEY (model_id, model_role) REFERENCES ops.model_registry ON DELETE RESTRICT,
+  prompt_sha    char(64) REFERENCES ops.prompt_registry ON DELETE RESTRICT,
+  rules_version text, thresholds jsonb,
+  taxonomy_stamp jsonb NOT NULL,
+  built_on_dataset_id bigint NOT NULL REFERENCES ops.label_dataset ON DELETE RESTRICT,
+  offline_eval   jsonb,                            -- PER-CATEGORY precision AND estimated recall + CIs (never one global number)
+  regression_eval jsonb,                           -- stable categories must not break
+  status text NOT NULL DEFAULT 'draft' CHECK (status IN
+    ('draft','offline_eval','shadow','adjudication','approved','rejected','promoted','abandoned')),
+  created_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE ops.detector_release (
+  release_id   bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  release_uid  text NOT NULL UNIQUE,               -- 'DET-VIOL-r7' — THE version stamp on findings/cases
+  candidate_id bigint NOT NULL REFERENCES ops.detector_candidate ON DELETE RESTRICT,
+  approved_by  text NOT NULL, approved_at timestamptz NOT NULL,   -- documented human promotion (SD-22)
+  adjudication_ref jsonb NOT NULL,                 -- diff sample reviewed, disagreement stats, decision note
+  stage        text NOT NULL DEFAULT 'canary' CHECK (stage IN ('canary','full','rolled_back','retired')),
+  canary_scope jsonb,                              -- one programme or a % of sessions (Amendment §6.5)
+  activated_at timestamptz, rolled_back_at timestamptz,
+  rollback_to  bigint REFERENCES ops.detector_release ON DELETE RESTRICT,   -- instant rollback, decisions never lost
+  monitoring   jsonb NOT NULL DEFAULT '{}'         -- feeds `detector_acceptance_rate`, drift, case volumes (doc 11 registry)
+);
+-- release cadence: monthly or on gate-pass, whichever is LESS frequent [ASSUME OD-33]
+
+CREATE TABLE ops.shadow_result (                    -- append-only; shadow findings NEVER reach findings.finding or any queue
+  shadow_result_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  candidate_id bigint NOT NULL REFERENCES ops.detector_candidate ON DELETE RESTRICT,
+  baseline_release_id bigint REFERENCES ops.detector_release ON DELETE RESTRICT,
+  pipeline_run_id bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT,    -- shadow rides the nightly run
+  advisory_session_id bigint NOT NULL REFERENCES core.advisory_session ON DELETE RESTRICT,
+  outcome text NOT NULL CHECK (outcome IN
+    ('agree_flag','agree_noflag','candidate_only','baseline_only','category_differs')),
+  detail  jsonb NOT NULL,                          -- finding-level diffs: categories, confidences, quote anchors
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_shadow_candidate ON ops.shadow_result (candidate_id, outcome);
+```
+
+EXP-11 (false-negative estimation design — stratified unflagged sampling; strata per Amendment §6.4) feeds `label_class='unflagged_random'` items; sample size/cadence [ASSUME OD-32 — weekly stratified sample, size set by EXP-11].
+
+### 19.6 Monthly leadership infographic — `packs.monthly_infographic` + `packs.infographic_section` (migration 0015)
+
+**Modelling decision [REC]: pack-artifact subtype, not a standalone product table.** The infographic «نبض خدمة الاستشارات والإرشاد — ملخص الشهر» (SD-19, CAP-OPS-08, PB-014, VS-05) is stored as a 1:1 **subtype extension of `packs.pack`** (its pack row carries `capability_id='CAP-OPS-08'`): it inherits, for free, the immutable `result_envelope` (the byte-identity anchor for web/PDF/PNG), pack identity + corpus-snapshot + taxonomy stamps, the frozen session denominator (`pack_session`), the append-only `packs.publication` pointer with supersession + computed cause codes, and `packs.retraction_obligation`. Alternative — a standalone `monthly_infographic` with its own publication log — rejected: it would duplicate the publication/supersession machinery ADR-0011 already hardened and create a second, weaker freeze doctrine for the single most leadership-visible artifact. Revisit trigger: a future non-pack-shaped edition (e.g., live display mode PB-210) that cannot be expressed as a frozen artifact — none foreseen, since even display mode rotates *approved artifacts*.
+
+```sql
+CREATE TABLE packs.monthly_infographic (
+  infographic_id  bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  infographic_uid text NOT NULL UNIQUE,            -- 'INFG-2026-08-a'
+  pack_id  bigint NOT NULL UNIQUE REFERENCES packs.pack ON DELETE RESTRICT,   -- 1:1 subtype (capability CAP-OPS-08)
+  edition  text NOT NULL DEFAULT 'general_leadership' CHECK (edition IN
+             ('general_leadership','ops_team','programme','quarter_compare')),  -- launch = one fixed template [DECISION Amendment §7.6]
+  template_version text NOT NULL,
+  period_start date NOT NULL, period_end date NOT NULL CHECK (period_end > period_start),
+  status   text NOT NULL DEFAULT 'draft' CHECK (status IN
+             ('draft','data_review','content_review','approved','published','superseded','retracted')),  -- exact Amendment §7.5 states
+  completeness_pct numeric(5,2) NOT NULL,          -- gate ≥ 98 [ASSUME Amendment §13; = G-PACK-01 threshold, doc 09 §5]
+  completeness_override_reason text,               -- when set, MUST render on the artifact face (Amendment §4.4-5/§7.3)
+  payload_sha256 char(64) NOT NULL,                -- sha256 of pack.result_envelope payload — web/PDF/PNG all derive from THIS
+  render_web_uri text, render_pdf_uri text, render_png_uri text,
+  render_pdf_sha char(64), render_png_sha char(64),-- byte-identical numeric payload asserted by the doc 15 render-identity test
+  created_by_run bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT,   -- nightly step 16 mints drafts
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX uq_infographic_active ON packs.monthly_infographic (edition, period_start, period_end)
+  WHERE status NOT IN ('superseded','retracted');
+
+CREATE TABLE packs.infographic_section (            -- immutable once its infographic leaves 'draft'
+  infographic_id bigint NOT NULL REFERENCES packs.monthly_infographic ON DELETE RESTRICT,
+  section_no smallint NOT NULL CHECK (section_no BETWEEN 1 AND 6),
+  section_kind text NOT NULL CHECK (section_kind IN
+    ('service_pulse',        -- «نبض الخدمة»
+     'quality_impact',       -- «جودة وأثر الجلسات»
+     'beneficiary_voice',    -- «صوت المستفيد»
+     'quality_compliance',   -- «الجودة والالتزام» — APPROVED violations only; suspected-queue size as its own figure
+     'decisions_needed',     -- «ما يحتاج قرارًا»
+     'footer')),             -- «التذييل الإلزامي»: period, refresh, denominators, exclusions, taxonomy versions, snapshot, drill-down link
+  payload  jsonb NOT NULL,                          -- every number = a metric-result reference (R6/I3: no LLM numbers, drawn programmatically)
+  drilldown jsonb NOT NULL DEFAULT '[]',            -- KPI → session-set/metric refs (RBAC-scoped at render)
+  PRIMARY KEY (infographic_id, section_no)
+);
+```
+
+Workflow wiring, all reused: `draft → data_review → content_review → approved` transitions are recorded as `ops.review_item(item_kind='publication_signoff', pack_id=…)` + append-only `ops.review_event` rows (Data Owner → Service Owner → Publication Authority per Amendment §7.5; authority = OD-10); `published`/`superseded` are `packs.publication` rows (reused verbatim — supersession chain + computed cause codes); `retracted` follows `packs.retraction_obligation`. A reissue mints a new pack + new infographic row; the published prior edition is never edited (ADR-0011). Consultant names never appear in the general edition [ASSUME OD-31 — masked by default; direct-manager RBAC per OD-09/OD-14 rules]. Publication channels Portal + approved Email [ASSUME OD-29]. Rebase interplay: doc 06 §4.8.3.
+
+### 19.7 Action Center — `serve.service_improvement_action` + `action_event` + `action_metric_baseline` (migration 0015)
+
+CAP-OPS-09 «مركز الإجراءات» (SCR-19, PB-015): finding → recommended action → owner → due date → status → completion evidence → post-action metric comparison (Amendment §2.4). Lives in `serve` — the serving API is the writer (write matrix §1). Ownership: service owner owns actions; leadership sees aggregate status/impact [ASSUME OD-34].
+
+```sql
+CREATE TABLE serve.service_improvement_action (
+  action_id  bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  action_uid text NOT NULL UNIQUE,                 -- 'ACT-2026-0031'
+  title_ar text NOT NULL, description_ar text,
+  source_kind text NOT NULL CHECK (source_kind IN
+    ('finding','metric_drift','infographic_recommendation','digest_item','review_outcome','recovery_case','manual')),
+  source_ref jsonb NOT NULL,                       -- typed pointer: session_uid / pack_uid / case_uid / metric spec — uids only, no content
+  owner_sub  text NOT NULL,                        -- accountable owner [ASSUME OD-34]
+  due_at date, priority text CHECK (priority IN ('low','normal','high')),
+  status text NOT NULL DEFAULT 'proposed' CHECK (status IN
+    ('proposed','accepted','in_progress','blocked','done','verified','cancelled')),
+  expected_metric jsonb,                           -- registered metric id + direction (I12 names only; feeds `action_completion_rate`)
+  created_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_action_open ON serve.service_improvement_action (owner_sub, due_at)
+  WHERE status NOT IN ('done','verified','cancelled');
+
+CREATE TABLE serve.action_event (                   -- append-only (C6): REVOKE UPDATE, DELETE
+  action_id bigint NOT NULL REFERENCES serve.service_improvement_action ON DELETE RESTRICT,
+  seq integer NOT NULL,
+  event_kind text NOT NULL CHECK (event_kind IN
+    ('created','status_changed','owner_changed','due_changed','comment','evidence_attached','closure_evidence','impact_measured')),
+  payload jsonb NOT NULL DEFAULT '{}',
+  actor text NOT NULL, occurred_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (action_id, seq)
+);
+
+CREATE TABLE serve.action_metric_baseline (         -- before/after measurement anchors; computed by the compiler, never by hand or LLM (I3)
+  action_id bigint NOT NULL REFERENCES serve.service_improvement_action ON DELETE RESTRICT,
+  measure_point text NOT NULL CHECK (measure_point IN ('baseline','followup_1','followup_2')),
+  metric_id text NOT NULL,                          -- registered metric (I12)
+  period_start date NOT NULL, period_end date NOT NULL CHECK (period_end > period_start),   -- end-exclusive (C5)
+  value jsonb NOT NULL,                             -- metric-result envelope ref + value + CI
+  computed_by_run bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT,
+  computed_at timestamptz NOT NULL,
+  PRIMARY KEY (action_id, measure_point, metric_id)
+);
+-- Baseline-vs-follow-up comparison is descriptive follow-up ONLY — never an unproven causal claim (Amendment §12-10; doc 10 owns the method rule).
+```
+
+### 19.8 Notifications — `ops.notification_subscription` + `ops.notification_delivery` (migration 0015)
+
+Carrier for «صباحيات الخدمة» (CAP-OPS-10, SCR-21, PB-016), nightly-run status, SLA breaches, DQ alerts, infographic publication, and action due-dates.
+
+```sql
+CREATE TABLE ops.notification_subscription (
+  subscription_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_sub text NOT NULL,                           -- OIDC subject
+  kind text NOT NULL CHECK (kind IN
+    ('morning_digest','nightly_run_status','review_sla_breach','dq_alert',
+     'infographic_published','action_due','watchlist')),
+  channel text NOT NULL CHECK (channel IN ('portal','email')),   -- Teams/other later [ASSUME OD-29]
+  scope jsonb NOT NULL DEFAULT '{}',                -- programme/queue filters, evaluated within the subscriber's RBAC (I14)
+  enabled boolean NOT NULL DEFAULT true,
+  created_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX uq_subscription ON ops.notification_subscription (user_sub, kind, channel, md5(scope::text));
+-- Grant exception (recorded here + doc 16 grant matrix): nip_web receives INSERT/UPDATE on THIS TABLE ONLY
+-- within ops — users manage their own subscriptions through the API; every other ops write stays worker-owned (§1).
+
+CREATE TABLE ops.notification_delivery (            -- append-only delivery ledger (C6)
+  delivery_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  subscription_id bigint NOT NULL REFERENCES ops.notification_subscription ON DELETE RESTRICT,
+  pipeline_run_id bigint REFERENCES ops.pipeline_run ON DELETE RESTRICT,   -- digest deliveries cite their nightly run
+  payload_ref jsonb NOT NULL,                       -- links + uids only; NO P2 content in notification bodies (doc 16 policy)
+  status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','sent','failed','suppressed')),
+  attempts int NOT NULL DEFAULT 0,
+  sent_at timestamptz, error_detail text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_delivery_failed ON ops.notification_delivery (subscription_id, created_at DESC)
+  WHERE status = 'failed';                          -- delivery-failure alert feed (doc 19)
+```
+
+### 19.9 Reference summary — the 20 amendment tables
+
+| Table | PK | Append-only? | Migration | Volume/y [INFER] |
+|---|---|---|---|---|
+| `ops.pipeline_run` | surrogate + `run_uid` | workflow state (+ audit events) | 0014 | ~9k (nightly + hourly) |
+| `ops.pipeline_step_run` | `(run, step_no)` | workflow state | 0014 | 16× runs |
+| `ops.data_quality_issue` | surrogate + `issue_key` | state machine; resolution stamped, never deleted | 0014 | 10³ |
+| `ops.reconciliation_case` | surrogate | case rows append; recurrence = new row | 0014 | 10³–10⁴ |
+| `findings.review_case` | surrogate + `case_uid` | state machine; history in events | 0014 | 10²–10³ |
+| `findings.review_event` | `(case, seq)` | **yes** (C6 REVOKEs) | 0014 | ~5× cases |
+| `findings.review_assignment` | `(case, seq)` | **yes** | 0014 | ~2× cases |
+| `findings.missed_violation_report` | surrogate | state machine; never deleted | 0014 | 10² |
+| `ops.label_dataset` | surrogate + `(target, version)` | immutable after build | 0014 | 10¹–10² |
+| `ops.label_dataset_item` | `(dataset, seq)` | **immutable**; invalidation trio only | 0014 | 10³–10⁴ |
+| `ops.detector_candidate` | surrogate | state machine | 0014 | 10¹ |
+| `ops.detector_release` | surrogate + `release_uid` | append; rollback = new stage stamp | 0014 | ~12 [ASSUME OD-33] |
+| `ops.shadow_result` | surrogate | **yes** | 0014 | 10⁴ per shadow month |
+| `packs.monthly_infographic` | surrogate + `infographic_uid` | new row per reissue; published never edited | 0015 | ~12–48 (editions) |
+| `packs.infographic_section` | `(infographic, section_no)` | immutable post-draft | 0015 | 6× infographics |
+| `serve.service_improvement_action` | surrogate + `action_uid` | state machine; history in events | 0015 | 10² |
+| `serve.action_event` | `(action, seq)` | **yes** | 0015 | ~8× actions |
+| `serve.action_metric_baseline` | `(action, point, metric)` | write-once per point | 0015 | ≤3× actions × metrics |
+| `ops.notification_subscription` | surrogate | soft-disable via `enabled` | 0015 | 10² |
+| `ops.notification_delivery` | surrogate | **yes** | 0015 | 10⁴–10⁵ |
+
+In-migration ALTERs: 0014 adds `ingest.ingestion_run.pipeline_run_id` and `findings.finding.review_case_id` (both nullable FKs; §19.2/§19.4). Creation order inside 0014 respects FK dependencies: learning tables (`label_dataset` → `detector_candidate` → `detector_release` → `shadow_result`) precede `review_case` (which FKs `detector_release`). C6 append-only REVOKEs extend to `findings.review_event`, `findings.review_assignment`, `ops.shadow_result`, `serve.action_event`, `ops.notification_delivery`, and the `ops.label_dataset_item` no-delete rule; the structural append-only test list (§0.1 C6) is extended accordingly.
 
 ---
 *End of document 08. Doc 09 consumes the ingest/core/transcript write paths; doc 10 the findings/cluster methodology surfaces; doc 11 the registry-to-index contract; doc 16 the grants and masking DDL; doc 20 the `legacy_snapshot` migration mappings; doc 23 sequences the Alembic migrations that realize this model.*

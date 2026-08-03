@@ -1,8 +1,8 @@
 # 06 — Transcript Provider Strategy
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02, amended 2026-08-03 (Owner Amendment integrated) · **Author:** Planning package (Fable 5)
 **Depends on:** 02, 04, 05 · **Feeds:** 07, 08, 09, 10, 14, 15, 16, 19, 20, 21, 22, 23
-**Sources used:** GREENFIELD §2.1, §2.6, §9.1–9.4, §11.3, §15.2–15.4, §21 (EXP-02); MASTER_PROMPT §2.4, §2.5, §2.6; arch/01 §4, arch/02 §7, arch/05 §3, arch/04 §Ingestion; CORE-BRIEF §6, §7, §10, §11
+**Sources used:** GREENFIELD §2.1, §2.6, §9.1–9.4, §11.3, §15.2–15.4, §21 (EXP-02); MASTER_PROMPT §2.4, §2.5, §2.6; arch/01 §4, arch/02 §7, arch/05 §3, arch/04 §Ingestion; CORE-BRIEF §6, §7, §10, §11; Owner Amendment 2026-08-03 §4.1/§4.4 (nightly binding), §12-06 (rebase blast radius)
 
 ---
 
@@ -29,6 +29,15 @@ Operational constraints carried into doc 05/09 planning:
 - **OD-13 — second OAuth client.** Read.ai token rotates on refresh; sharing one client between legacy and new platform breaks both (each refresh invalidates the other's refresh token) [FACT arch/05 §3.1 refresh semantics + I10 independence]. A dedicated OAuth client for NIP must be requested **now** — it is the single longest-lead dependency of ongoing ingestion. Interim fallback if the client is delayed: bootstrap from the one-time checksummed snapshot (ADR-0016) and replay export files, never a shared credential.
 - Tokens live **only** in `ingest` schema state managed by the worker plane; no `.env` write-back ever (legacy F12 lesson) [FACT arch/07 F12].
 - Read.ai title-format change of June 2026 broke identity parsing and produced 1,629 `'PENDING'` magic strings [FACT arch/05 §2]. In NIP, provider identity fields are nullable + `resolution_status` enum (CORE-BRIEF §6); the transcript layer never carries identity semantics.
+
+### 1.1 Pull cadence — bound to the Nightly Consolidation Run [DECISION owner 2026-08-03 / Amendment §4.1]
+
+Provider pulls execute as **step 2 of the Nightly Consolidation Run — التشغيل الليلي الموحد** (doc 09 §10; CAP-OPS-01; flag `nightly_consolidation_enabled`), which starts 02:00 Asia/Riyadh, configurable [ASSUME OD-28]. Rules:
+
+1. **Hourly incremental pulls remain allowed** (Read.ai adapter schedule unchanged, doc 09 §3.2) to reduce transcript latency; they run as `run_kind='hourly_incremental'` pipeline runs.
+2. **The nightly run is authoritative**: it closes the previous day — re-lists the provider window, reconciles against the DataHub sub-feeds, completes enrichment, and stamps the day's counts. Whatever an hourly increment ingested is re-covered by the nightly authoritative pass (content-addressing makes the overlap free, doc 05 §2.5). Dashboards, digests, and official artifacts cite nightly runs, never bare increments.
+3. Every provider adapter run — hourly or nightly — links its `ingest.ingestion_run` row to the owning consolidation run record (`ops.pipeline_run`, doc 08 §19.2), so SCR-14 (مركز تشغيل البيانات) shows one coherent story per day.
+4. A provider-side transcript **change** detected by any pull still parks as an inactive version (doc 09 §2.4); activation remains exclusively `rebase_transcript` — the nightly run never flips text sources implicitly.
 
 ---
 
@@ -297,6 +306,9 @@ Executed per flipped session; each row is a checklist item the operation records
 | Serving-plane caches / resolved facts | `serve` | Conversation-scoped resolved facts referencing affected sessions invalidated; in-flight Lane-1 conversations get `VALIDATION_FAILED` on stale references rather than stale answers |
 | Source quality score | `transcript` | Recomputed for the new active source (already done at `CANDIDATE_MARKED`; pointer swap only) |
 | Metric-layer aggregates | `serve`/`packs` materializations | Recompute any materialized aggregate whose lineage includes transcript-derived findings for affected periods (lineage from I12 registry) |
+| **Violation-review cases** (Amendment addition) | `findings.review_case` | Affected cases transition to `stale_needs_review` — never silently reopened, never silently kept (§4.8.1) [DECISION owner 2026-08-03 / Amendment §12-06] |
+| **Learning-dataset items** (Amendment addition) | `ops.label_dataset_item` | Affected items **marked** `invalidated`, never deleted — dataset immutability (SD-22) (§4.8.2) |
+| **Monthly-infographic drafts** (Amendment addition) | `packs.monthly_infographic` | Unpublished drafts covering affected sessions blocked pending recompute; published editions only via supersession (§4.8.3) |
 
 ### 4.5 Sequence diagram (one month-partition, happy path + block)
 
@@ -347,6 +359,18 @@ Revisit-trigger: Monsha'at records-management policy (doc 16) may lengthen these
 ### 4.7 Explicit rule — no cross-provider turn mapping
 
 **Never map old turn indices onto new provider turn indices.** [FACT GREENFIELD §9.2; MASTER_PROMPT §2.5] Providers segment differently; any alignment heuristic silently corrupts quote provenance. Consequences accepted by design: (a) links/citations minted against the old source stop resolving after the retention window — answer artifacts store their `(source, source_version)` so an old export remains internally honest but marked superseded; (b) longitudinal per-turn analytics never span a rebase — they are re-derived wholly from the new source (fresh-per-period analysis R-P3 makes this natural).
+
+### 4.8 Rebase blast radius — review cases, learning datasets, infographic drafts [DECISION owner 2026-08-03 / Amendment §12-06, §4.4-7]
+
+A transcript source change (rebase flip, or any future re-delivery activated through rebase) reaches three surfaces the original §4.4 checklist predates. All three execute inside the `INVALIDATING` step (state machine §4.2), driven by the same digest cascade (doc 09 §2.4); none is a manual afterthought. Entity DDL: doc 08 §19.4–19.6; detector-release interplay: doc 14.
+
+**4.8.1 Violation-review cases → `stale/needs-review`, never silent.** For every `findings.review_case` whose `basis_fingerprint` covers a flipped session, the invalidator appends a case-level `findings.review_event` (`event_kind='stale_marked'`, actor `invalidator:rebase_op_<n>`) and transitions the case to `case_state='stale_needs_review'`. Two prohibitions are absolute: the case is **never silently reopened** (a stale case is visibly distinct from a new suspicion — SCR-08's filter «الحالات التي أعاد النظام فتحها بسبب تغير النص أو الكاشف» reads exactly these transitions, and the case detail shows the Amendment §5.3-10 warning that the text changed after the decision), and it is **never silently kept** as if its decisions still bound the new text (human sign-off does not transfer across sources — GREENFIELD §6.5, §4.4 review-fingerprints row). Prior decisions remain append-only history; findings re-extracted from the new source open fresh cases linked via `reopened_from`, so «مخالفة صحيحة» decided on superseded text can never leak into approved-violation counts for the new text (SD-20; I-list: suspected ≠ approved).
+
+**4.8.2 Learning-dataset items → marked invalid, never deleted.** `ops.label_dataset` versions are **immutable** (SD-22): the invalidator sets `invalidated=true, invalidated_reason='rebase_op_<n>'` on every `ops.label_dataset_item` whose `(advisory_session_id, transcript_source_id)` basis was superseded, and flips the owning dataset's status to `invalidated_partial`. Items are never removed, relabelled, or re-pointed at the new text — a label is evidence about the text the labeller saw. Downstream effects (doc 14 detector-release lifecycle): offline/regression evaluations must exclude invalidated items or re-run; a `detector_candidate` whose eval predates the invalidation re-enters `offline_eval` before promotion; holdout membership of an invalidated item is never recycled into a training split (no-leakage rule, doc 08 §19.5).
+
+**4.8.3 Infographic drafts → blocked pending recompute.** Any `packs.monthly_infographic` in a pre-publication state (`draft`/`data_review`/`content_review`/`approved`) whose period contains a flipped session is **blocked**: the workflow halts, the draft is marked pending-recompute, and recompute mints a *new* underlying pack + infographic row (immutability, ADR-0011) which re-enters `draft` and re-evaluates the ≥98% completeness gate [ASSUME Amendment §13]. Approvals never carry over to recomputed numbers. Already-**published** editions are never edited in place: if the rebase materially changes published figures, the ADR-0011 supersession path applies through `packs.publication` with computed `cause_code='CORPUS'` (doc 08 §10), and the ops task auto-created at flip time (§4.4 frozen-packs row) lists affected infographic editions alongside affected packs.
+
+The pre-flip `FLIP_READY` report (§4.2) must quantify all three: stale-case count (re-review workload), invalidated-label count per dataset, and blocked-draft list — the steward approves the blast radius, not just the flip.
 
 ---
 
@@ -564,6 +588,8 @@ No meeting-bot/recorder build (scope fence, GREENFIELD §2.1); no Whisper-based 
 | EXP-02 hard gates G1–G8 + weighted sheet; cost reported not scored | §5.5 [REC] | pilot labelling noise > 8% CER; OD-12 flip; per-turn confidence availability |
 | Quality tiers A–D with capability-level degradation + coverage declaration | §6 [REC] | component-vs-WER correlation from EXP-02; 20% partial-stamp threshold reviewed after first quarterly pack |
 | Glossary: read-time, whole-word, no write-back, quotes never glossed, delete-on-clean-provider | §7 [DECISION MASTER_PROMPT §2.4 + REC details] | EXP-07 entity-recall gap (query-embedding synonyms) |
+| Provider pulls bound to the Nightly Consolidation Run; hourly incremental allowed, nightly authoritative | §1.1 [DECISION owner 2026-08-03 / Amendment §4.1] | OD-28 resolution (run time + completion SLA) |
+| Rebase blast radius: review cases → `stale_needs_review`; dataset items marked-not-deleted; infographic drafts blocked pending recompute | §4.8 [DECISION owner 2026-08-03 / Amendment §12-06] | first production rebase retro (docs 08 §19, 09 §10, 14) |
 | STT contingency assess-only; enters via same contract if ever activated | §8 [DECISION GREENFIELD §9.4] | OD-12 + OD-04(audio) approvals AND OD-06 slip > 6 months |
 | Second Read.ai OAuth client requested immediately | OD-13 | n/a — procurement action, doc 21 tracks |
 

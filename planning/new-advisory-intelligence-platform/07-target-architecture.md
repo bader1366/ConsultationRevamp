@@ -1,7 +1,7 @@
 # 07 — Target Architecture
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 02, 04, 05, 06 · **Feeds:** 08, 09, 11, 12, 13, 14, 16, 17, 19, 22, 23
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-03 (Owner Amendment integrated) · **Author:** Planning package (Fable 5)
+**Depends on:** 02, 04, 05, 06 · **Feeds:** 08, 09, 11, 12, 13, 14, 16, 17, 19, 22, 23, 24, 25
 **Sources used:** GREENFIELD §2, §7, §8.1–8.8, §10, §22, §24; MASTER_PROMPT §5.1–5.5, §6 (R1–R16), §7.1; arch/07 §1 (strengths), §2 (F1–F22), §3 (scaling), §5 (strawman); CORE-BRIEF §6, §7, §8, §11, §12
 
 ---
@@ -293,6 +293,36 @@ Enrichment assertions:
 - **Five separated stages** (extraction / validation / clustering / scoring / review) per GREENFIELD §8.3 — one model response can never directly become a published aggregate.
 - **Validation runs at write time**, so `findings` never contains an unverified quote even transiently visible to serving: serving views filter on `validation_status = 'verified'` AND review gates where the capability requires them (CAP-B4).
 - **The Lane-3 engine is a worker-plane citizen**: it shares the extraction toolchain (strict schemas, bounded pools, quote verification) but runs against a **frozen corpus manifest**, so a job's numbers are reproducible even while ingestion continues (doc 13).
+
+### 4.3 Operational product components (Owner Amendment 2026-08-03)
+
+**The operational product is the centre of this architecture; agentic chat is an interface above it** [DECISION owner 2026-08-03 / Amendment §12-07]. Where earlier drafts of this package read as if the serving lanes (§4.1, doc 12) were the primary product, that emphasis is amended: the C4 views above exist to serve an operational platform — nightly consolidation, Session 360, the «اشتباه مخالفة» review workflow, governed detector learning, the monthly leadership infographic, actions, and digests — and the lanes are one interface over its governed views. Delivery follows the same order: the operational core ships and stabilizes across VS-00..VS-07 before the Lane-1/Lane-3 surfaces ship in VS-09/VS-10 [DECISION SD-18] (doc 25 owns the slice protocol; doc 12 §0.1 records the serving-side consequence).
+
+**Six operational loops — the operating model the §3 containers serve** [DECISION owner 2026-08-03 / Amendment §2]. Each loop must be visible in the architecture, data model (doc 08), APIs (doc 17 §13A), screens (doc 18), observability (doc 19 §2.8), and backlog (doc 24):
+
+| # | Loop | Path (Amendment §2) | Components below | First slice |
+|---|---|---|---|---|
+| OL-1 | حلقة البيانات اليومية | provider + DataHub → raw immutable intake → canonical session → reconciliation → enrichment → quality gates → serving views | Nightly Orchestrator · Source Watermark · Data Reconciliation | VS-01 / VS-03 |
+| OL-2 | حلقة مراجعة المخالفات | detection → «اشتباه مخالفة» → human review → six decisions → append-only audit trail | Review Case service | VS-02 |
+| OL-3 | حلقة تحسين الكاشف | review labels + missed cases + random negatives → versioned dataset → candidate → shadow → approval → deployment → monitoring → rollback | Learning Dataset & Detector Promotion | VS-04 |
+| OL-4 | حلقة تحسين الخدمة | finding → recommended action → owner → due date → status → completion evidence → post-action metric comparison | Action Center service | VS-06 |
+| OL-5 | حلقة التواصل القيادي | month close → completeness gate → one-page infographic draft → review → approval → internal publication → drill-down | Infographic/Publication · Notification | VS-05 |
+| OL-6 | حلقة السؤال الجديد | question → Lane 0/1 → Lane 2 → Lane 3 → reviewed reusable artifact → promotion candidate | serving plane §4.1 + doc 13 §8.4 (PB-208 promotion board) | VS-07 → VS-09/VS-10 |
+
+The eight components (each [DECISION owner 2026-08-03 / Amendment §12-07]; module homes are [REC] — doc 23 refines names, never boundaries):
+
+| Component (capability id) | Plane | Module home (§8.1 tree) | Invariants it enforces | Detail owner |
+|---|---|---|---|---|
+| **Nightly Orchestrator** — التشغيل الليلي الموحد (CAP-OPS-01). Run states exactly `queued → running → partial → succeeded → failed → cancelled → superseded`; starts 02:00 Asia/Riyadh, configurable; hourly Read.ai incremental allowed, the nightly run stays authoritative [ASSUME OD-28] | worker | `nwafeth/jobs/nightly/` | Idempotent re-runs — same period twice never duplicates rows or review cases (F1 class); a failed source makes the run `partial`, never a silent success (I16/R14, Amendment §4.4); one contract's failure never blocks the other pulls (Amendment §3.3-7); month-close trigger fires only past the completeness gate; resumability lives in Postgres, never local JSON (F13) | doc 09 (nightly chapter per Amendment §4); run-manifest artifact in doc 19 §4 |
+| **Source Watermark service** (`source_watermark`) | worker | `nwafeth/ingest/watermark/` | Independent watermark per source adapter (Amendment §4.4-2); I6 — raw persisted before any canonical write; counter identity per run makes silent gaps detectable; late-arriving data (e.g. a rating two days later) updates Session 360 incrementally without a full rebuild (Amendment §3.3-5) | docs 05/09; entity DDL in doc 08 |
+| **Data Reconciliation service** (`reconciliation_case`, `data_quality_issue`; steward queue «مشكلات الربط والبيانات») | worker (+ web read via doc 17 §13A.2) | `nwafeth/ingest/reconcile/` (existing) | Field-authority matrix enforced (DataHub governs session facts, the active transcript provider governs text — doc 05); source conflicts become DQ issues, never silent merges; `advisory_session` crosswalk is the only join mechanism — title-text parsing is never primary (Amendment §3.3-2) | docs 05/09/08; SCR-14 in doc 18 |
+| **Review Case service** — «اشتباه مخالفة» (CAP-OPS-05, CAP-OPS-06) | worker generates/updates cases (nightly step 11); web serves the queue and append-only decisions | `nwafeth/enrich/review/` (existing) + `apps/web` routers | `violation_finding` / `review_case` / `review_event` separation [DECISION SD-20]; decisions append-only with reviewer identity, closed reason codes, and text/detector/taxonomy stamps — no overwrite, no delete; suspected NEVER renders as confirmed anywhere; transcript or detector change invalidates via basis fingerprint → stale/needs-review transition, never a silent reopen (doc 06) | doc 08 (entities), doc 17 §13A.4, doc 18 SCR-08; SLA per OD-30 |
+| **Learning Dataset & Detector Promotion service** (CAP-OPS-07) | worker | `nwafeth/enrich/learning/` | Governed learning only [DECISION SD-22]: immutable versioned `label_dataset` (train/validation/holdout, no session leakage) → `detector_candidate` → offline per-category eval (precision AND estimated recall) → `shadow_result` runs → human adjudication → documented promotion → canary → `detector_release` with version stamp → monitoring → instant rollback. No reviewer click ever changes production detection directly; consultant names/ratings are never detector features | doc 14 (§6.5 lifecycle), doc 08, doc 15 (EXP-11 false-negative sampling) |
+| **Infographic/Publication service** — «نبض خدمة الاستشارات والإرشاد — ملخص الشهر» (CAP-OPS-08, PB-014) | worker builds; web drives approvals/publication | `nwafeth/jobs/infographic/` (beside `packs/` — shares the frozen-artifact and render machinery, ADR-0011) | Drawn programmatically from structured data ONLY — no LLM-computed numbers, no image-generation models (I3/R6) [DECISION SD-19]; optional LLM phrasing passes the R6 gate; web + PDF + PNG carry byte-identical payloads; lifecycle `draft → data_review → content_review → approved → published → superseded/retracted`; leadership numbers use human-approved violations only; no consultant names in the general edition [ASSUME OD-31] | doc 24 (PB-014), doc 08, doc 18 SCR-20, doc 17 §13A.7; publication authority OD-10/OD-29 |
+| **Notification service** — «صباحيات الخدمة» digest (CAP-OPS-10) + subscriptions | worker | `nwafeth/jobs/notify/` | Outbound content limited to approved/published artifacts, counts, and login-gated deep links (doc 16 §2.6); expiring signed URLs for files; every delivery recorded in `notification_delivery` and audited; digest content per Amendment §11.1 | doc 19 §4 (digest artifact), doc 16 (policies), doc 08 |
+| **Action Center service** — «مركز الإجراءات» (CAP-OPS-09) | web CRUD (append-only `action_event`); worker overdue sweeps + `action_metric_baseline` capture | `nwafeth/jobs/actions/` + `apps/web` routers | Every action carries owner + due date + status + completion evidence + post-action metric comparison (association only, never causal claims — doc 10); closure authority per OD-34; leadership sees aggregate status/impact, not a surveillance surface | doc 24 (PB-015), doc 08, doc 17 §13A.8, doc 18 SCR-19 |
+
+Surface notes: CAP-OPS-02 `data_ops_center`, CAP-OPS-03 `session_360`, CAP-OPS-04 `session_search`, CAP-OPS-11 `service_recovery_queue`, and CAP-OPS-12 `ops_dashboard` are user-facing surfaces over these components' governed views — doc 04 registers them with the same registry discipline as CAP-A/B/C/D (I12); doc 18 owns SCR-14..SCR-22. All eight components ship behind their feature flags (`nightly_consolidation_enabled`, `session_360_enabled`, `violation_review_enabled`, `monthly_infographic_enabled`, `action_center_enabled`); the agent-side flags (`lane1_agent_enabled`, `lane3_analysis_enabled`) gate only the interface layer above (doc 12 §0.1). New ops metrics these components emit — `nightly_run_success`, `data_completeness`, `source_join_rate`, `review_backlog_age`, `suspected_cases_open`, `detector_acceptance_rate`, `action_completion_rate` — are registered in doc 11 and alerted in doc 19 §2.8.
 
 ---
 
@@ -654,6 +684,8 @@ nwafeth-intelligence/
 └── ops/                         # compose files, grafana dashboards, alert rules, runbooks
 ```
 
+**Owner Amendment module homes [DECISION owner 2026-08-03 / Amendment §12-07; placement REC]:** the §4.3 operational components home as `nwafeth/jobs/nightly/`, `nwafeth/jobs/infographic/`, `nwafeth/jobs/notify/`, `nwafeth/jobs/actions/`, `nwafeth/ingest/watermark/`, and `nwafeth/enrich/learning/` — all inside the existing W1–W3 worker packages, so the §8.2 layer contracts and the §8.3 forbidden-import table apply to them unchanged (doc 23 refines names, not boundaries). Repository access for the amendment entities (doc 08: `pipeline_run`, `pipeline_step_run`, `source_watermark`, `dead_letter_item`, `data_quality_issue`, `reconciliation_case`, `violation_finding`, `review_case`, `review_event`, `missed_violation_report`, `label_dataset`, `detector_release`, `shadow_result`, `monthly_infographic`, `service_improvement_action`, `notification_subscription`, `notification_delivery`, …) joins the per-schema modules of `nwafeth/repository/` — the single SQL author rule is unchanged.
+
 ### 8.2 Dependency rules (import-linter contracts, enforced in CI)
 
 Layer ordering (lower may never import higher):
@@ -807,3 +839,5 @@ The matrix's invariant: **no row contains "answers differently, silently."** Eve
 - **Doc 19** — alert rules, dashboards, runbooks, and drill schedules for §9 and TD-10/TD-14.
 - **Doc 22** — ADR-0002/0003/0004/0005/0013/0014/0017/0018/0019 record TD decisions; OD-22 (BI mandate) registered there.
 - **Doc 23** — consumes §8 verbatim as the repository seed; the forbidden-import table is the module-boundary contract for implementation.
+- **Doc 24** — product backlog: Wave-A items PB-001..PB-018 bind the §4.3 operational components to users, value, and acceptance criteria; PB-014 is the standalone infographic product [DECISION SD-19]; everything beyond the committed early items requires owner consultation before entering a slice [DECISION SD-21].
+- **Doc 25** — incremental delivery and acceptance: the VS-00..VS-12 slice order and L0–L3 exposure levels that the §4.3 delivery statement cites [DECISION SD-18].

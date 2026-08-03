@@ -1,8 +1,8 @@
 # 05 — Data Source Contracts
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02, amended 2026-08-03 (Owner Amendment integrated) · **Author:** Planning package (Fable 5)
 **Depends on:** 02, 04 · **Feeds:** 06 (provider strategy), 08 (data model), 09 (ingestion pipelines), 16 (security/PII), 20 (migration), 22 (ADR/OD register)
-**Sources used:** GREENFIELD §2.2, §8.1, §9.1, §11.1–11.4, §15.2, §19.1–19.2, §23-05; MASTER_PROMPT §13.8, Appendix A dimension notes; arch/05 §3 (Read.ai interface reality, full), arch/04 §9 (services-report mechanics), arch/02 §4 (bridge + consultant tables); CORE-BRIEF §6, §11, §12
+**Sources used:** GREENFIELD §2.2, §8.1, §9.1, §11.1–11.4, §15.2, §19.1–19.2, §23-05; MASTER_PROMPT §13.8, Appendix A dimension notes; arch/05 §3 (Read.ai interface reality, full), arch/04 §9 (services-report mechanics), arch/02 §4 (bridge + consultant tables); CORE-BRIEF §6, §11, §12; Owner Amendment 2026-08-03 §3 (SRC-DATAHUB family, authority matrix, linking requirements), §12-05, §13
 
 ---
 
@@ -15,18 +15,22 @@ Two governing principles from GREENFIELD §2.2:
 1. The platform combines **two classes of data** — conversation-provider data and Monsha'at internal session data — and must *reconcile* them, not merely store them side by side.
 2. **Fields with similar names are never assumed identical.** Every dictionary row below carries a `similar-name warning` column precisely because the legacy corpus contains at least three distinct meanings of «قطاع», two unrelated "ratings", three disagreeing consultant tables, and two unrelated "durations" [FACT MASTER_PROMPT App. A; arch/02 §4].
 
-Source IDs used throughout the package:
+Source IDs used throughout the package (internal sources restructured 2026-08-03 into one first-class family):
 
 | Source ID | Name | Class | Contract § |
 |---|---|---|---|
 | `SRC-READAI` | Read.ai meetings + transcripts (interim) | provider | §2 |
 | `SRC-TSP` | Future transcript provider via `TranscriptSource` | provider | §3 |
-| `SRC-INT` | Monsha'at internal session data | internal | §4 |
-| `SRC-DIR` | Consultant directory | internal | §5 |
-| `SRC-REF` | Programme/service/window/channel reference data | internal | §6 |
-| `SRC-EVAL` | Beneficiary rating + consultant evaluation sources | internal | §7 |
-| `SRC-OUT` | Optional outcome / follow-up sources | internal | §8 |
+| **`SRC-DATAHUB`** | **Monsha'at Internal Advisory DataHub — the internal source FAMILY (six sub-contracts below)** | internal (family) | §4.0 |
+| `SRC-DATAHUB-SESSION` | Session registrations: id, schedule, status, programme/window, channel, consultant, service type, cancellation & no-show | internal | §4 — alias `SRC-INT` |
+| `SRC-DATAHUB-DIRECTORY` | Institutional consultant identity, unit, specialty, employment status (no beneficiary-PII widening) | internal | §5 — alias `SRC-DIR` |
+| `SRC-DATAHUB-REFERENCE` | Programme/sector/topic/service/status definitions + reference value codes | internal | §6 — alias `SRC-REF` |
+| `SRC-DATAHUB-BENEFICIARY-EVAL` | Beneficiary rating score, free-text comments, evaluation date, detail questions where present | internal | §7 — alias `SRC-EVAL` (instrument `beneficiary_rating`) |
+| `SRC-DATAHUB-CONSULTANT-EVAL` | Consultant's session evaluation, notes, recommendations, session result, follow-up need | internal | §7 — alias `SRC-EVAL` (instrument `consultant_evaluation`) |
+| `SRC-DATAHUB-OUTCOME` | Follow-on sessions, linked actions/services, follow-up state, permitted operational outcomes | internal | §8 — alias `SRC-OUT` |
 | `SRC-SNAP` | One-time legacy snapshot import | bootstrap | §9 |
+
+> **Supersession note [DECISION owner 2026-08-03 / Amendment §3.1].** The former free-standing internal source IDs `SRC-INT`, `SRC-EVAL`, `SRC-OUT`, `SRC-DIR`, `SRC-REF` are **superseded as top-level sources** and restructured as sub-contracts of the `SRC-DATAHUB` family (§4.0). The old IDs remain **registered aliases** — `ingest.source_system` keeps their rows with a `family = 'SRC-DATAHUB'` attribute — so every existing reference in docs 04–23 stays valid without edits; new text cites the `SRC-DATAHUB-*` IDs. There is exactly one framing from this date: the DataHub is a **first-class institutional source with named sub-feed contracts**, not a loose collection of generic internal feeds. `SRC-EVAL` maps to *two* sub-contracts (the two instruments this document already kept contractually separate); the `instrument` discriminator of §7 is the split key.
 
 Identity resolution across sources (the crosswalk into `core.advisory_session`) is owned by doc 09; this document defines what each adapter **stages** and what the reconciliation layer must report. Adapters never resolve identity and never write magic strings — unresolved identity is a nullable FK + `resolution_status` + provenance [DECISION CORE-BRIEF §6; the legacy `'PENDING'` lesson, arch/04 §9].
 
@@ -352,16 +356,69 @@ Quality rules `DQ-TSP-001…005` mirror `DQ-READAI-003…007` (empty transcript,
 
 ---
 
-## 4. `SRC-INT` — Monsha'at internal session data (the authoritative operational record)
+## 4. `SRC-DATAHUB` — Monsha'at Internal Advisory DataHub (source family) · sub-contract `SRC-DATAHUB-SESSION` (alias `SRC-INT`)
 
-This is the second data class of GREENFIELD §2.2 and the **authoritative** side of every reconciliation: the internal session id anchors `core.internal_session_map`. Everything the legacy system obtained through the hand-uploaded "services report" Excel (94,963 rows; positional 49-column parsing; TRUNCATE-on-import destroying the consultant bridge on every upload [FACT arch/04 §9]) must arrive here through a governed feed instead.
+### 4.0 The family: six sub-contracts, one institutional source [DECISION owner 2026-08-03 / Amendment §3.1]
+
+`SRC-DATAHUB — Monsha'at Internal Advisory DataHub` is a **first-class source family**, not one feed: each sub-contract below is independently pulled, independently watermarked, independently versioned, and independently failable, while all six share one owner relationship, one access-mechanism decision, and one authority matrix (§4.0.1).
+
+| Sub-contract | Expected content (Amendment §3.1, verbatim in meaning) | Contract section | Alias |
+|---|---|---|---|
+| `SRC-DATAHUB-SESSION` | معرف الجلسة، الموعد، الحالة، البرنامج/النافذة، القناة، المستشار، نوع الخدمة، الإلغاء وعدم الحضور | §§4.1–4.6 | `SRC-INT` |
+| `SRC-DATAHUB-BENEFICIARY-EVAL` | درجة تقييم المستفيد، ملاحظاته النصية، تاريخ التقييم، الأسئلة التفصيلية إن وجدت | §7 | `SRC-EVAL` (instrument `beneficiary_rating`) |
+| `SRC-DATAHUB-CONSULTANT-EVAL` | تقييم المستشار للجلسة، ملاحظاته، التوصيات، نتيجة الجلسة، احتياج المتابعة | §7 | `SRC-EVAL` (instrument `consultant_evaluation`) |
+| `SRC-DATAHUB-OUTCOME` | الجلسات اللاحقة، الإجراءات أو الخدمات المرتبطة، حالة المتابعة، أي نتيجة تشغيلية مسموح باستخدامها | §8 | `SRC-OUT` |
+| `SRC-DATAHUB-DIRECTORY` | هوية المستشار المؤسسية، الوحدة، التخصص، الحالة الوظيفية — **دون توسيع PII للمستفيد** (I15) | §5 | `SRC-DIR` |
+| `SRC-DATAHUB-REFERENCE` | تعريفات البرامج، القطاعات، المواضيع، الخدمات، الحالات، وأكواد القيم المرجعية | §6 | `SRC-REF` |
+
+Family-level rules:
+
+1. **Access mechanism stays OD-07 — extended, not re-minted** [ASSUME OD-07]: the open decision now covers the *six sub-feed contracts* and carries the working assumption of a **daily institutional batch/API per sub-feed** (Amendment §13); Excel upload is a temporary fallback only (§4.6). OD-07's resolution must name, per sub-feed: owning system, transport, field inventory, enum inventory, SLA.
+2. **Pull cadence is bound to the Nightly Consolidation Run** (doc 09 §10, CAP-OPS-01, flag `nightly_consolidation_enabled`): all six sub-feeds are pulled as step 3 of the nightly run — each sub-feed on its own `ingest.ingestion_run` row linked to the consolidation run record (`ops.pipeline_run`, doc 08 §19.2). Intraday incremental pulls are permitted where the mechanism supports them; the nightly run remains the authoritative daily close [DECISION owner 2026-08-03 / Amendment §4.1].
+3. **Partial-run rule** [DECISION Amendment §3.3-7]: failure of one sub-feed **never blocks the other five**. The failed sub-feed's run is `failed`/`partial`, the consolidation run is marked `partial`, and the failure is displayed loudly on مركز تشغيل البيانات (SCR-14) — never converted to silent success (I16). Worked example (also acceptance criterion doc 09 §10.7): `SRC-DATAHUB-BENEFICIARY-EVAL` failing leaves transcript and SESSION ingest fully successful, run status `partial`.
+4. **Sub-contract versioning**: each sub-feed carries its own `contract_version`; a schema change in one sub-feed never forces re-certification of the other five.
+
+### 4.0.1 Field Authority Matrix — مصفوفة مصدر الحقيقة [DECISION owner 2026-08-03 / Amendment §3.2]
+
+One authority ruling per field group; adapters and the resolver enforce it, CAP-D9 reports violations of it. Rows 1–8 carry the Amendment's matrix verbatim in meaning; the remainder extend it with package-specific fields.
+
+| # | Field (group) | Primary source of truth | Secondary | Conflict rule |
+|---|---|---|---|---|
+| 1 | Session status, schedule, programme/window | `SRC-DATAHUB-SESSION` | Read.ai metadata | DataHub governs; the disagreement is recorded as a DQ issue (Q5 → `ops.data_quality_observation`/`ops.data_quality_issue`), feeds CAP-D9 — never silently reconciled |
+| 2 | Transcript text, speakers, timings | Active Transcript Provider (doc 06 `TranscriptSource`) | none | active provider version ONLY (I6/I7); never blended, never corrected |
+| 3 | Audio presence / speaking time vs registered attendance | Transcript provider (speech evidence) | DataHub attendance | **never mixed** — they mean different things; disagreement → Q5 → CAP-D3/CAP-D9 |
+| 4 | Institutional consultant identity | `SRC-DATAHUB-DIRECTORY` | Read.ai participant email/name | Directory governs **after crosswalk matching** (doc 09 §4); provider fields are matching evidence only, never written as identity |
+| 5 | Beneficiary rating | `SRC-DATAHUB-BENEFICIARY-EVAL` | none | never inferred from transcript text in its place — CAP-D1 *compares* text signals with the rating, never substitutes them |
+| 6 | Consultant evaluation + notes | `SRC-DATAHUB-CONSULTANT-EVAL` | none | independent direct source, deliberately separate from any text analysis |
+| 7 | Violations, challenges, indicators | The NIP platform (derived findings) | none | derived findings with provenance + versions (I13); never a source field |
+| 8 | Violation review state | The NIP platform | none | append-only review events (`findings.review_case`/`review_event`, doc 08 §19.4); no overwrite |
+| 9 | Session period anchor (`session_date`) | precedence `actual_at` → `provider_start_at` → `scheduled_at` (doc 10 rule; doc 08 §3.1) | — | basis recorded in `session_date_basis`; never silent |
+| 10 | Programme/service/window/channel **codes** | `SRC-DATAHUB-REFERENCE` | SESSION feed values | codes must exist in REFERENCE; unknown value → `DQ-INT-003` BLOCK + steward mapping |
+| 11 | Attendance (who showed up) | `SRC-DATAHUB-SESSION` attendance | provider `participants[].attended` | internal is operational truth; provider is observation; drift → Q5 |
+| 12 | Outcomes / follow-up completion | `SRC-DATAHUB-OUTCOME` (when active) | SESSION `followup_required`/`closure_status` | OUTCOME upgrades, never contradicts silently (§8) |
+| 13 | Provider metrics (`read_score`, `sentiment`, `engagement`) | provider — **as source features only** | — | never satisfaction/quality truth (§2.11 warning column) |
+| 14 | Beneficiary identity | pseudonym boundary (doc 08 §3.4) | — | no PII widening (I15; OD-15) |
+
+### 4.0.2 Linking and reconciliation requirements (family-level) [DECISION owner 2026-08-03 / Amendment §3.3]
+
+1. **One stable institutional session identity inside the platform**: the `core.advisory_session` hub with its NIP-minted `session_uid` (doc 08 §0.2). The Amendment's `advisory_session_id` is exactly this hub id — already the package's canonical name.
+2. **Crosswalk-first identity — title parsing is never the primary mechanism.** Every source identifier is retained in crosswalk tables (`core.provider_meeting_map`, `core.internal_session_map`, `core.consultant_source_ref`); matching runs the deterministic resolver ladder M0–M2 first (doc 09 §4.2). Provider **title claims** (§2.7) are resolver *evidence* feeding M1/M2 — a fallback input, never a stored guess and never the primary join. If OD-07 delivers the provider meeting id inside the SESSION feed, M0 makes title parsing residual entirely.
+3. **Daily measures**, computed by the nightly run (steps 6 + 14, doc 09 §10.2) into the daily roll-up (doc 09 §3.4) and the metric registry (doc 11; exact names `source_join_rate`, `data_completeness`): share of provider sessions matched to DataHub; share of DataHub sessions holding a transcript; duplicates; time/status conflicts (Q5); late-arriving records. Cohort-level KPI definitions and targets remain §10.2 (EXP-01).
+4. **Steward queue «مشكلات الربط والبيانات»**: Q1–Q5 (§10.1) plus their durable case layer `ops.reconciliation_case` + `ops.data_quality_issue` (doc 08 §19.3), owned by the Data Steward persona, surfaced on SCR-14 with SLAs and append-only dispositions.
+5. **Late-arriving data re-projects, never rebuilds.** A beneficiary evaluation arriving T+2d writes a new fact version and re-projects الجلسة 360 (Session 360, CAP-OPS-03) through the digest cascade — only affected stage rows and serving views recompute (doc 09 §2.4, step 13); no full re-extraction, no corpus rebuild. Acceptance criterion doc 09 §10.7-4.
+6. **Update semantics on every internal record**: every sub-feed row carries `source_record_version`, `observed_at`, and `effective_at` (when the source supplies it) — dictionary rows added in §4.5; staged as versioned facts so out-of-order delivery is ordered by version, not by arrival.
+7. **Partial-run rule** — §4.0 rule 3 (one failed sub-feed ⇒ run `partial`, other sub-feeds proceed, failure loud).
+
+---
+
+**The `SRC-DATAHUB-SESSION` sub-contract (alias `SRC-INT`) — §§4.1–4.6.** This is the second data class of GREENFIELD §2.2 and the **authoritative** side of every reconciliation: the internal session id anchors `core.internal_session_map`. Everything the legacy system obtained through the hand-uploaded "services report" Excel (94,963 rows; positional 49-column parsing; TRUNCATE-on-import destroying the consultant bridge on every upload [FACT arch/04 §9]) must arrive here through a governed feed instead.
 
 ### 4.1 Contract header
 
 | Contract field | Value |
 |---|---|
 | Owner | Monsha'at operations systems team (source); platform data engineering (adapter) [ASSUME OD-07 — the owning system and team must be named at OD-07 resolution] |
-| Transport | **Recommended:** daily read-only extract API or managed file drop (CSV/Parquet + manifest + per-file SHA-256), pulled by the adapter [ASSUME OD-07 — safe assumption: read-only API/export]. Alternatives: (a) read replica — rejected as default: couples NIP to source schema churn and violates least-privilege posture; (b) continued manual Excel upload — **interim-only**, hardened per §4.6. Revisit trigger: OD-07 decision |
+| Transport | **Recommended:** daily read-only extract API or managed file drop (CSV/Parquet + manifest + per-file SHA-256), pulled by the adapter as nightly-run step 3 [ASSUME OD-07 — safe assumption: daily institutional batch/API per sub-feed, Amendment §13]. Alternatives: (a) read replica — rejected as default: couples NIP to source schema churn and violates least-privilege posture; (b) manual Excel upload — **temporary fallback ONLY, never the target mechanism while DataHub is available** [DECISION owner 2026-08-03 / Amendment §12-05], hardened per §4.6. Revisit trigger: OD-07 decision |
 | Auth | Service account / mTLS or signed URLs per Monsha'at IT standard [ASSUME OD-02]; credential reference in vault |
 | Cursor/watermark | `max(updated_at)` per entity with a **48h lookback re-read** window; weekly full-snapshot compare as sweep (row counts + per-column checksums) |
 | Idempotency key | `(internal_session_id, updated_at, row_sha256)` — a re-delivered identical row is a no-op; changed hash at same id = new fact version |
@@ -424,14 +481,21 @@ These are contract-level rules, enforced as dictionary annotations + registry di
 | `beneficiary_comments` | «ملاحظات المستفيد» | text NULL | P2 | Free-text comments | `core.beneficiary_rating_fact.comments` | — | — |
 | `consultant_evaluation` / `consultant_notes` | consultant's evaluation + recommendations | int/text NULL | P2 | Consultant's own session evaluation and notes (logical `SRC-EVAL`) | `core.consultant_evaluation_fact` | see §7 | ≠ beneficiary rating (CAP-D2 compares them — they must remain distinct facts) |
 | `created_at` / `updated_at` | «تاريخ الإنشاء» / modified | timestamptz | P0 | Record lifecycle; `updated_at` is the watermark | staging + cursor | — | `created_at` is NOT the session date |
+| `source_record_version` | version / etag / revision | text or int NOT NULL when supplied | P0 | Source-side record version — orders out-of-order deliveries, idempotency component [DECISION Amendment §3.3-6] | staging + fact version stamp | — | ≠ `contract_version` (the feed schema version) |
+| `observed_at` | delivery/extract stamp | timestamptz NOT NULL | P0 | When NIP observed this record (adapter-stamped at fetch) [DECISION Amendment §3.3-6] | staging + reconciliation lag measures | — | ≠ source `updated_at` |
+| `effective_at` | business-effect time | timestamptz NULL | P0 | When the change took business effect, where the source supplies it [DECISION Amendment §3.3-6] | fact `valid_from` | — | ≠ `created_at`, ≠ `observed_at` |
 
-### 4.6 Interim hardening if manual Excel persists [REC]
+*(The three rows above apply to **every** `SRC-DATAHUB-*` sub-feed dictionary — SESSION here, DIRECTORY §5, REFERENCE §6, both EVAL instruments §7, OUTCOME §8 — not only to this table.)*
 
-Until OD-07 lands, uploads may continue as an interim transport — but under this contract's rules, none of the legacy mechanics survive: **header-name mapping** (never positional — the legacy `raw_row[:49]` zip silently corrupted all fields on any column reorder [FACT arch/04 §9]), **append-with-supersede** keyed on `(internal_session_id, row_sha256)` (never `TRUNCATE` — the legacy TRUNCATE wiped the consultant linkage on every upload), authenticated endpoint, per-file manifest + checksum, and full reconciliation report per upload. Errors return errors, not HTTP 200 (I16).
+### 4.6 Excel upload — temporary fallback only, hardened [DECISION owner 2026-08-03 / Amendment §12-05]
+
+Excel upload is **not a target mechanism** while the DataHub is available; it is a temporary fallback used only until the OD-07 feed activates (or during a declared feed outage), and its retirement is an explicit OD-07 deliverable — an ops task is opened at feed activation so removal cannot be forgotten. While it exists, none of the legacy mechanics survive: **header-name mapping** (never positional — the legacy `raw_row[:49]` zip silently corrupted all fields on any column reorder [FACT arch/04 §9]), **append-with-supersede** keyed on `(internal_session_id, row_sha256)` (never `TRUNCATE` — the legacy TRUNCATE wiped the consultant linkage on every upload), authenticated endpoint, per-file manifest + checksum, and full reconciliation report per upload. Errors return errors, not HTTP 200 (I16). Fallback uploads flow through the **same** staging, quality rules, and reconciliation as the feed — the transport is the only degraded element, never the governance.
 
 ---
 
-## 5. `SRC-DIR` — consultant directory
+## 5. `SRC-DATAHUB-DIRECTORY` — consultant directory (alias `SRC-DIR`)
+
+**Family position [DECISION owner 2026-08-03 / Amendment §3.1]:** this is the `SRC-DATAHUB-DIRECTORY` sub-contract of the §4.0 family; `SRC-DIR` remains a registered alias. It is the primary authority for institutional consultant identity (§4.0.1 row 4) and carries **no beneficiary PII** — the sub-feed must not widen PII scope (I15). Update-semantics fields per §4.5 addendum apply.
 
 Legacy reality: **three disagreeing consultant tables** (`v2_consultants` 39 rows, `v2_consultant_scores` 446, `v2_consultant_directory` 894 — the last with no DDL in the repo), plus 19 consultant ids appearing in meetings with no directory row [FACT arch/02 §4]. The new platform has exactly one consultant dimension, fed by exactly one contract.
 
@@ -460,7 +524,9 @@ Starter dictionary:
 
 ---
 
-## 6. `SRC-REF` — programme / service / window / channel reference data
+## 6. `SRC-DATAHUB-REFERENCE` — programme / service / window / channel reference data (alias `SRC-REF`)
+
+**Family position [DECISION owner 2026-08-03 / Amendment §3.1]:** the `SRC-DATAHUB-REFERENCE` sub-contract — definitions of programmes, sectors, topics, services, statuses, and reference value codes; the authority for every code the SESSION feed uses (§4.0.1 row 10). `SRC-REF` remains a registered alias.
 
 | Contract field | Value |
 |---|---|
@@ -478,9 +544,11 @@ Baseline content [FACT CORE-BRIEF §11; MASTER_PROMPT App. A]: `window ∈ {irsh
 
 ---
 
-## 7. `SRC-EVAL` — rating and evaluation sources
+## 7. `SRC-DATAHUB-BENEFICIARY-EVAL` + `SRC-DATAHUB-CONSULTANT-EVAL` — rating and evaluation sub-contracts (alias `SRC-EVAL`)
 
-Physically, ratings/evaluations may arrive **inside** the `SRC-INT` extract (they did in the legacy services report). Contractually they are a separate source because their semantics, lineage, and consumers differ — CAP-D1 (rating vs transcript alignment) and CAP-D2 (consultant vs beneficiary evaluation) require the two evaluation streams to be independently versioned facts, and I18/E.0 method rules forbid quietly averaging across sources.
+**Family position [DECISION owner 2026-08-03 / Amendment §3.1]:** the old `SRC-EVAL` splits into **two** sub-contracts of the §4.0 family — `SRC-DATAHUB-BENEFICIARY-EVAL` (instrument `beneficiary_rating`: score, ملاحظات المستفيد, evaluation date, detail questions where present) and `SRC-DATAHUB-CONSULTANT-EVAL` (instrument `consultant_evaluation`: the consultant's session evaluation, notes, recommendations, session result, follow-up need — targets `core.consultant_evaluation` + `core.followup_fact`). The `instrument` discriminator below is the split key; everything in this section applies to both unless an instrument is named. `SRC-EVAL` remains a registered alias covering the pair. Each instrument feed is independently failable (§4.0 rule 3) and carries the §4.5 update-semantics fields.
+
+Physically, ratings/evaluations may arrive **inside** the `SRC-DATAHUB-SESSION` extract (they did in the legacy services report). Contractually they are separate sub-contracts because their semantics, lineage, and consumers differ — CAP-D1 (rating vs transcript alignment) and CAP-D2 (consultant vs beneficiary evaluation) require the two evaluation streams to be independently versioned facts, and I18/E.0 method rules forbid quietly averaging across sources.
 
 | Contract field | Value |
 |---|---|
@@ -507,9 +575,11 @@ Starter dictionary (delta over §4.5 rows):
 
 ---
 
-## 8. `SRC-OUT` — optional outcome / follow-up sources
+## 8. `SRC-DATAHUB-OUTCOME` — outcome / follow-up sub-contract (alias `SRC-OUT`)
 
-GREENFIELD §2.2 lists "any available outcome/action tracking" and §8.1 requires the adapter even though availability is unconfirmed. The contract is defined now; **activation is gated on OD-07 scope** [ASSUME OD-07 — safe assumption: not available at phase 0; CAP-D7 launches on `SRC-INT.followup_required/closure_status` alone and upgrades when this source activates].
+**Family position [DECISION owner 2026-08-03 / Amendment §3.1]:** the `SRC-DATAHUB-OUTCOME` sub-contract — follow-on sessions, linked actions/services, follow-up state, and any operational outcome approved for use. `SRC-OUT` remains a registered alias.
+
+GREENFIELD §2.2 lists "any available outcome/action tracking" and §8.1 requires the adapter even though availability is unconfirmed. The contract is defined now; **activation is gated on OD-07 scope** [ASSUME OD-07 — safe assumption: not available at phase 0; CAP-D7 launches on `SRC-DATAHUB-SESSION.followup_required/closure_status` alone and upgrades when this source activates].
 
 | Contract field | Value |
 |---|---|
@@ -629,11 +699,13 @@ Contract: **every** WARN/BLOCK from every quality rule in §§2–9, every Q5 co
 | SRC-OUT | daily when active | T+72h [REC] | P2 | — |
 | SRC-SNAP | one-time (+ build re-snapshots) | n/a | P3 | `legacy_snapshot` grants |
 
+*(Alias key per §4.0: SRC-INT = SRC-DATAHUB-SESSION · SRC-DIR = -DIRECTORY · SRC-REF = -REFERENCE · SRC-EVAL = -BENEFICIARY-EVAL + -CONSULTANT-EVAL · SRC-OUT = -OUTCOME. Daily cadences execute as Nightly Consolidation Run step 3, doc 09 §10; hourly incrementals for SRC-READAI remain permitted, nightly is authoritative.)*
+
 ### 10.5 Revisit triggers for this contract book
 
 | Trigger | Action |
 |---|---|
-| OD-07 resolved (mechanism + SLA + field inventory) | Finalise §4–§8 transports, enum mappings, and the P3-exclusion negotiation; re-issue dictionaries at contract_version 1.0 |
+| OD-07 resolved (mechanism + SLA + field inventory, per §4.0 sub-feed) | Finalise the six `SRC-DATAHUB-*` sub-contract transports, enum mappings, and the P3-exclusion negotiation; re-issue dictionaries at contract_version 1.0; open the Excel-fallback retirement task (§4.6) |
 | OD-13 second Read.ai OAuth client granted | Activate §2.3; record credential_ref; rehearse token rotation in staging |
 | Third Read.ai title era detected (`DQ-READAI-001` rise) | Amend §2.7 era table; new claims parser version |
 | Replacement provider shortlisted (OD-06) | Instantiate §3 against the real API; run doc 06 benchmark + rebase rehearsal |

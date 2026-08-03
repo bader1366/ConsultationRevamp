@@ -1,6 +1,6 @@
 # 20 — Migration, Parallel Run, and Cutover
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-03 (Owner Amendment integrated) · **Author:** Planning package (Fable 5)
 **Depends on:** 05 (snapshot contract §9, source contracts), 06 (rebase, provider strategy), 08 (`legacy_snapshot` §13, core DDL), 09 (ingestion, reconciliation, resolver), 10 (re-derivation methodology), 15 (golden suite as gate evidence), 16 (PII classes, audit), 17 (API surface the replay harness drives), 19 (dashboards/drills as gate evidence) · **Feeds:** 21 (roadmap phases), 22 (ADR-0016, OD-13/OD-27), 23 (implementation order)
 **Sources used:** GREENFIELD §19 (fully), §2.3, §1.3, §9.2; MASTER_PROMPT §13.8 (snapshot mechanics, Read.ai credential constraint, ingestion ownership), §13.9 (parity doctrine); CORE-BRIEF §10 OD-13, §11 baselines, §12 defect pins; arch/06 §5–6 (legacy corpus reality)
 
@@ -32,6 +32,20 @@ flowchart LR
     HARNESS["parity harness<br/>(external, HTTP only)"] -.->|replay| LEGACYAPI["legacy HTTP API"]
     HARNESS -.->|replay| NIPAPI["NIP HTTP API"]
 ```
+
+### 0.1 Cohort staging ladder — the mandated development data strategy (Owner Amendment 2026-08-03)
+
+[DECISION owner 2026-08-03 / Amendment §10.6] All development, migration, and detector work climbs one fixed data ladder. No rung may be skipped, and full-corpus processing before the same path has succeeded on a fixture and then a small sample is prohibited (Amendment §10.4-8):
+
+| Rung | Data | Size | Exposure (doc 25 levels) | Existing artifact it binds to |
+|---|---|---|---|---|
+| 1 | Synthetic fixture, zero PII, committed to git | dozens of sessions covering the critical cases | L0 developer tests | doc 15 synthetic corpus; the VS-00 seed fixture |
+| 2 | Anonymized snapshot slice (restricted store, used only after owner approval) | ~500 sessions | L0 integration/golden runs; L1 demo substrate | §1.9 fixture slice |
+| 3 | Staging cohort | **20–100 sessions** (VS-01's «20 جلسة من Read.ai و20 سجلًا من DataHub» lives here) | L1 owner previews | doc 25 VS-01..VS-06 demo cohorts |
+| 4 | One closed month | ~600–1,500 sessions (CORE-BRIEF §11 volume range) | L1/L2 rehearsal of month-close, digest, and infographic | G2 rehearsal cohort |
+| 5 | Full corpus backfill | ~16.9k sessions | worker-plane only until the §4 gates | §1.9bis re-derivation campaign — runs only after resumability, cost, and DQ behaviour are proven on rungs 3–4 |
+
+The ladder binds every pipeline equally: ingestion, enrichment, violation detection, infographic build, and any detector shadow run (§1.11). Rung promotion is recorded in the slice acceptance record (doc 25); the §1.9bis campaign is the only sanctioned rung-5 entry point.
 
 ---
 
@@ -282,6 +296,17 @@ Every run carries `extraction_run_id`, `model_id`, `prompt_sha`, `taxonomy_versi
 
 While NIP has no live ingestion (§2), the corpus is refreshed by re-snapshot: **monthly**, or on demand before a gate [REC]. Each re-snapshot is a new `SNAP-nn`; migration reruns incrementally (§1.5); the reconciliation delta between consecutive snapshots is itself evidence (it measures legacy churn on closed months — feeding §3.4's `data snapshot difference` ledger).
 
+### 1.11 Shadow-detector migration — legacy labels never seed production detectors (Owner Amendment 2026-08-03)
+
+[DECISION SD-22 / Amendment §12-20] Legacy-derived labels — the crosswalked `taxonomy_version=0` classifications of §1.7 and the legacy violations table generally (no PK, 3,103 exact duplicate rows [FACT arch/06 §7.14]) — are **candidate material only**. They never configure, seed, or tune a production detector directly, and no bootstrap step may short-circuit this. The only path into production detection is the doc 14 §6.5 lifecycle:
+
+1. Curated legacy exemplars (deduplicated, human-relabelled under the current taxonomy) may enter a **versioned immutable `label_dataset`** with provenance `origin='legacy_snapshot'` and the standard train/validation/holdout split (no session leakage).
+2. Offline evaluation per category — precision AND estimated recall with confidence intervals, never a single total (Amendment §6.5).
+3. **Shadow run** against the incumbent detector on rung-3/4 cohorts (§0.1), producing `shadow_result` rows; production queues untouched.
+4. Human adjudication of the disagreement sample → documented promotion decision → canary → full deployment with version stamp → monitoring (`detector_acceptance_rate`, doc 19 §2.8) → instant rollback that loses no review decisions.
+
+The first production detector (VIOL-008 «التواصل خارج الإطار الرسمي» [ASSUME OD-35 — owner may swap the first type before the VS-02 build]) is built from **new review labels gathered in VS-02**; legacy exemplars may only augment its datasets through the path above. Consultant names/ratings are never detector features, in migration datasets or anywhere else [DECISION SD-22].
+
 ---
 
 ## 2. Independent ongoing ingestion
@@ -391,13 +416,15 @@ Initial set [REC — ~60 questions, committed as `parity_set.yaml`]:
 |---|---|---|
 | Volume/count sanity | 12 | «كم عدد الجلسات في يناير 2026؟» per month × channels — doubles as the **data-snapshot-diff canary** (§3.4) |
 | Clear-steps rate (CAP-B1 ≈ legacy step_clarity) | 8 | rate + denominator echo |
-| Violations (CAP-B5 ≈ legacy canonical types, 1:1 rows only) | 10 | counts per category — **expected-fail direction entries** (§3.3) |
+| Violations (CAP-B5 ≈ legacy canonical types, 1:1 rows only) | 10 | counts per category — **expected-fail direction entries** (§3.3); **suspected and approved series compared separately, never one number** (see rule below) |
 | Satisfaction distribution (CAP-A3 ≈ legacy satisfaction signals) | 8 | positive/negative/neutral shares |
 | Top challenges (CAP-C1, 1:1 categories only) | 8 | top-5 by month |
 | Government mentions (CAP-C5 ≈ legacy government_mentions counts) | 6 | entity counts for high-frequency entities with exact alias match |
 | Consultant-scoped counts | 8 | for consultants resolved in **both** systems (excludes the legacy 9.6% `'PENDING'` cohort from parity; that cohort is instead an expected-difference entry) |
 
 The set grows only by committing new entries with their crosswalk proof; it never grows to "compare everything" — a comparison that is usually wrong teaches everyone to ignore it [FACT MASTER_PROMPT §13.9].
+
+**Suspected and approved violation counts are compared separately — never one number** [DECISION SD-19/SD-20 / Amendment §12-20]. Legacy violation counts are unreviewed machine detections, so PAR-V entries compare them against NIP's **suspected** `violation_finding` counts only (AD-001's dedup direction bound applies to that series). NIP's **approved** violation counts — the output of the six-decision human review workflow — have no legacy analogue and are `OUT_OF_SCOPE` for parity **by construction**: the harness reports them beside the parity table as a separate informational series with its own label («معتمدة بعد المراجعة البشرية»), and any parity output, dashboard, or gate record that presents a single combined "violations" figure is itself a class-2 defect. Leadership-facing numbers remain approved-only with queue size shown separately (`suspected_cases_open`), during the parallel run exactly as after it.
 
 **Worked example — one committed parity entry, end to end:**
 
@@ -465,6 +492,8 @@ Nightly from G0; PASS-rate and FAIL-streak feed gate criteria (§4). The parity 
 ## 4. Pilots and cutover — gates G0…G5
 
 Roles: **gate owner** decides pass/fail with the named evidence; product owner signs G3+ [ASSUME OD-10]. All gate evidence is artifacts (dashboards, reports, signed sheets) — never verbal. The legacy system runs unmodified throughout; no gate asks anything of it beyond staying up for replay.
+
+**Exposure-level boundary — parity NEVER blocks L1 owner previews [DECISION SD-18 / Amendment §9.2; recorded as resolved conflict #1].** Gates G0–G5 and the parity harness govern **L2 (controlled pilot) and L3 (production-default)** exposure only. From the earliest vertical slices, the owner previews each feature at **L1** in staging on synthetic or rung-2/3 cohort data (§0.1) while parity runs in the background — a red parity night, an incomplete crosswalk, or an unfinished gate is never a reason to withhold an L1 demo. The earlier package phrasing "nothing user-visible before EXP-09/EXP-10" is amended accordingly: those experiment gates guard pilot/production exposure, not internal owner previews. The converse also binds: L1 acceptance is never authorization for L2/L3 — those still require the gates in the table below (doc 25 owns the L0–L3 definitions).
 
 ### Gate table
 

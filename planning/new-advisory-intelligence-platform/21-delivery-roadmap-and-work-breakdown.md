@@ -1,17 +1,17 @@
 # 21 — Delivery Roadmap and Work Breakdown
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 04 (capability IDs), 05 (source contracts SRC-*), 06 (provider gate), 07 (architecture), 08 (schemas), 09 (ingestion), 10 (methodology), 11 (semantic layer), 12 (lanes), 13 (Lane-3), 14 (models), 15 (DS-01…DS-12, HG/QT gates), 16 (security controls), 17 (API), 18 (review UX) · **Feeds:** 00 (index), 01 (executive summary), 20 (parallel run detail), 22 (ODs needed-by-phase), 23 (implementation handoff)
-**Sources used:** GREENFIELD §20 (workstreams + per-phase field list), §21 (experiments), §18–§19, §2.5; MASTER_PROMPT §4.4, §5.3, E.15; CORE-BRIEF §9–§12; docs 05 §10.2, 06 §5.5–5.6, 15 §2
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-04 (Owner Amendment 2026-08-03 integration — SD-18…SD-22, §0.5 execution overlay) · **Author:** Planning package (Fable 5)
+**Depends on:** 04 (capability IDs), 05 (source contracts SRC-*), 06 (provider gate), 07 (architecture), 08 (schemas), 09 (ingestion), 10 (methodology), 11 (semantic layer), 12 (lanes), 13 (Lane-3), 14 (models), 15 (DS-01…DS-12, HG/QT gates), 16 (security controls), 17 (API), 18 (review UX), 25 (VS delivery/acceptance protocol — §0.5 points to it) · **Feeds:** 00 (index), 01 (executive summary), 20 (parallel run detail), 22 (ODs needed-by-phase), 23 (implementation handoff), 24 (release waves), 25 (per-VS acceptance)
+**Sources used:** GREENFIELD §20 (workstreams + per-phase field list), §21 (experiments), §18–§19, §2.5; MASTER_PROMPT §4.4, §5.3, E.15; CORE-BRIEF §9–§12; docs 05 §10.2, 06 §5.5–5.6, 15 §2; Owner Amendment 2026-08-03 §§0, 4.6, 6.4, 7.7, 9, 10, 12, 13, 15 (SD-18…SD-22 — doc 02 register)
 
 ---
 
 ## 0. How to read this roadmap
 
 - **No calendar dates.** GREENFIELD §20 forbids dates that assume unapproved staffing [FACT GREENFIELD §20]. Everything here is relative sequencing, dependency edges, and effort ranges. When staffing is approved, multiply.
-- **Effort units.** Epics are sized S / M / L / XL: S ≈ ≤1 engineer-week, M ≈ 1–3 ew, L ≈ 3–6 ew, XL ≈ 6–10 ew (an XL must be split into ≤L child tickets before implementation starts) [REC — alternative: story points; rejected because a greenfield plan with no team velocity has no point baseline; revisit after two phases of actuals].
+- **Effort units.** Epics are sized S / M / L / XL: S ≈ ≤1 engineer-week, M ≈ 1–3 ew, L ≈ 3–6 ew, XL ≈ 6–10 ew (an XL must be split into ≤L child tickets before implementation starts) [REC — alternative: story points; rejected because a greenfield plan with no team velocity has no point baseline; revisit after two phases of actuals]. Under the execution overlay, every epic — of any size — is additionally re-cut into **≤4–8 agent-hour coding tickets** before implementation [DECISION SD-18, Amendment §10.1; §0.5.7].
 - **Phases are dependency clusters, not sprints.** A phase exits when its exit criteria are green — never on elapsed time. Later-phase work MAY start early where the dependency table explicitly allows it (marked ⇢ early-start).
-- **Experiments EXP-01…EXP-10 are gates, not research.** Each is bound to a phase boundary in §4; a red experiment blocks the marked decision, not the whole programme, and each gate names its fallback.
+- **Experiments EXP-01…EXP-11 are gates, not research.** Each is bound to a phase boundary in §4; a red experiment blocks the marked decision, not the whole programme, and each gate names its fallback. Under the execution overlay each gate additionally binds to the feature slice it protects (§0.5.5) — it blocks that slice's L2/L3 exposure, never the L1 owner preview [DECISION SD-18]. EXP-11 was added by the Owner Amendment [DECISION SD-22, Amendment §6.4].
 - **Owner time is the scarcest resource** [INFER from MASTER_PROMPT §4.4 + E.15]. Four items need sustained Monsha'at-side attention and are flagged ◐OWNER wherever they appear: answer-key signing (DS-03), taxonomy naming/approval (R-P2 loop), benchmark labelling supervision (DS-01/04/05), and the provider + Groq contract track (OD-06/OD-13/OD-19/OD-25).
 
 ### 0.1 Phase overview
@@ -26,6 +26,8 @@
 | P5 | Lane-3 factory + custom RAG | On-demand deep analysis: map→verify→reduce, resumable, promotable | EXP-08 |
 | P6 | Packs, parallel run, pilots | Signed monthly/quarterly packs; shadow + pilots vs legacy | EXP-10 (full) · parallel-run report |
 | P7 | Cutover + operations hardening | Production default; legacy contained; ops/DR/continuous evaluation proven | Cutover checklist (doc 20) |
+
+> **Execution overlay [DECISION SD-18, Amendment §9]:** these phases remain the gate/dependency framework (*what must be true*), but the execution order is the vertical slices VS-00…VS-12 of **§0.5** (*what gets built, shown, and accepted, in order*). Each slice cuts across phases and ends in a mandatory stop → demo → acceptance → owner approval.
 
 ### 0.2 Workstream coverage map (GREENFIELD §20 — all 17)
 
@@ -51,12 +53,72 @@
 
 ---
 
+## 0.5 Execution overlay — vertical slices VS-00…VS-12 [DECISION SD-18, Amendment §9]
+
+**Integrated 2026-08-04 from the binding Owner Amendment of 2026-08-03.** Doc 25 owns the full delivery-and-acceptance protocol (per-slice demo scripts, acceptance checklists, exposure rules, the agent state-file template); doc 24 owns the product backlog and release waves; doc 23 §0.3 carries the agent-facing execution protocol. This section is the roadmap-side statement of record.
+
+### 0.5.1 How phases and slices coexist (the reconciliation)
+
+The phases P0…P7 and the experiment gates of this document **remain the dependency/gate framework** — *what must be true before what*. The **execution overlay** is the vertical slices VS-00…VS-12 — *what gets built, shown, and accepted, in which order*. Each VS maps to a subset of phase deliverables/epics; a VS may pull forward the **minimal slice** of a later phase's machinery (e.g. VS-05 pulls a minimal pack-render path forward from P6) **provided its L2/L3 exposure still waits for the owning phase's gates**. EPIC-01…36 in doc 23 remain the ticket inventory, but they are re-sequenced and SPLIT into ≤4–8h tickets under the VS order. The first executable order after owner approval of the amended package is **VS-00 only** — stop, accept, then VS-01 [DECISION Amendment §15].
+
+Two corollaries [DECISION SD-18]:
+
+1. **The first testable product does NOT wait for all 26 CAP-* capabilities** [DECISION Amendment §0.7]. VS-07 ships five deterministic capabilities (Amendment §9.3); the remaining catalogue completes in VS-08/VS-11 under the unchanged registry discipline (I12 — nothing unregistered ever ships).
+2. **Owner previews (L1) happen from the earliest slices** on synthetic or limited governed staging data. Production gates (EXP-09/EXP-10 etc.) gate **L2/L3 exposure only — never L1 previews**; and passing L1 never authorizes L2/L3 (resolved conflict #1, Amendment §0.9, superseding the former "nothing user-facing" phrasing — see §1.4).
+
+### 0.5.2 Exposure levels (Amendment §9.2 — doc 25 owns the full rules)
+
+| Level | Data | Audience | Gates |
+|---|---|---|---|
+| **L0** Developer | synthetic | developer / coding agent | unit + component tests |
+| **L1** Owner Preview | synthetic or a limited governed Staging sample | owner + project team | feature acceptance; **no operational decisions** |
+| **L2** Controlled Pilot | designated real data | named, authorized users | the feature's accuracy + security gates |
+| **L3** Production | production data | approved internal audience | full release gates + rollback + ops readiness |
+
+L3 requirements must never be used to block an L1 preview; L1 success is never a licence for L2/L3 [DECISION Amendment §9.2].
+
+### 0.5.3 The slice table
+
+| VS | Goal (product slice) | Maps to (phase deliverables / EPICs / backlog) | Demo (L1) | Acceptance home | Stop gate (beyond the universal §0.5.4 stop) | Flags | Exposure |
+|---|---|---|---|---|---|---|---|
+| **VS-00** | Walking skeleton: runnable app, login + RBAC, Alembic baseline, CI, logging, Home, health/readiness, seed fixture | P0 subset: EPIC-01 / 02 / 03-subset / 04-subset / 07-subset (P0-E1…E5, E10 slices); external-request bundle (P0-E7) files here | user logs in; sees environment, build version, live DB/queue health — no hardcoded status | 25 §VS-00 | CI green; no default credentials; PII-free fixture; real health page | — (flag infrastructure lands here) | L0→L1 |
+| **VS-01** | First unified session from both sources: 20 Read.ai + 20 SRC-DATAHUB records linked; «الجلسة 360» | P1 subset + P0-E8: EPIC-09/10/11/12-subset + Session-360 slice (SCR-15; PB-003/004/005) | open one session: transcript + service data + evaluations + per-field source provenance | 25 §VS-01 | EXP-01 (snapshot) confirmed; zero duplication; crosswalk + unmatched visible; re-ingest idempotent | `session_360_enabled` | L1 |
+| **VS-02** | First violation from source to human decision: VIOL-008 end-to-end + «اشتباه مخالفة» (SCR-08 upgrade) | P2 slice + P0-E6: EPIC-16-slice (VIOL-008 only) + EPIC-18-slice + EPIC-08 portal core + review-case APIs (PB-006…PB-010) | fixture session raises a suspicion; reviewer opens the case (verbatim quote ±5 turns), decides; append-only trail | 25 §VS-02 | quote exact (R7); finding/case/event separated; suspected ≠ approved everywhere; VIOL-008-scoped precision check; OD-30/OD-35 assumptions in force | `violation_review_enabled` | L1 |
+| **VS-03** | Nightly Consolidation Run + «مركز تشغيل البيانات» on a bounded sample | P1 remainder + ops: EPIC-13/14/15 + pipeline-run entities + nightly orchestrator + SCR-14 (PB-001/002/012; CAP-OPS-01/02) | manual staging trigger; stages, counts, watermarks, DLQ and a partial-source failure shown from real run data | 25 §VS-03 | Amendment §4.6 criteria; run states `queued → running → partial → succeeded → failed → cancelled → superseded`; idempotent re-run; OD-28 assumption | `nightly_consolidation_enabled` | L1 |
+| **VS-04** | First learning loop: VS-02 decisions → Dataset v1 → candidate detector → shadow comparison | learning pipeline (migration 0014 learning entities; SCR-18; PB-011; EXP-11 design) — ADR-0022 lifecycle | current vs candidate compared on a declared versioned dataset; promotion needs documented approval; rollback demonstrated | 25 §VS-04 | EXP-11 design approved (OD-32); holdout separation; per-category precision AND estimated recall; no auto-promotion | — (shadow-only; governed by the ADR-0022 release lifecycle, no exposure flag) | L0/L1 |
+| **VS-05** | First monthly infographic «نبض خدمة الاستشارات والإرشاد — ملخص الشهر»: one fixed template on a fixture/staging month | infographic slice (migration 0015 part; SCR-20; PB-014; CAP-OPS-08); minimal pack-render path pulled forward from P6-E1/E2 — ADR-0023 | web + PDF + PNG byte-identical payloads; draft → data_review → content_review → approved → published | 25 §VS-05 | Amendment §7.7 criteria; approved-violations-only; no LLM-computed numbers (R6); completeness gate ≥98% or face-printed override; OD-29/OD-31 assumptions | `monthly_infographic_enabled` | L1 |
+| **VS-06** | Ops dashboard + Action Center: core KPIs with drill-down; actions with owner/due/status/impact | dashboard + actions (migration 0015 part; SCR-19; PB-013/015/016; CAP-OPS-09/10/12; minimal KPI path over an EPIC-19 subset) | spot a clear-steps drop → open its sessions → create a training action → track its status | 25 §VS-06 | shown numbers ride the metric path (EXP-06 scope); zero hardcoded values; OD-34 assumption | `action_center_enabled` | L1 |
+| **VS-07** | First five deterministic capabilities (Amendment §9.3 list) with verified numbers | EPIC-19/20 MVP-five (EXP-05/EXP-06 inside the slice; EXP-03/EXP-04 slices where capability 5 consumes extraction/clusters) | five governed questions / dashboard cards answer with provenance, coverage, period stamps | 25 §VS-07 | EXP-06 100% on the served cross-product; EXP-05 floor on the served set; EXP-03/EXP-04 floors where consumed | per-capability registry flags | L1 |
+| **VS-08** | Operational-analysis expansion: «قائمة التعافي الخدمي», bounded Consultant-360, recurring fixed answers, inconsistent answers, weekly pulse | EPIC-20b slices (PB-101/102/105/106/118; SCR-22; CAP-OPS-11) | recovery queue populated by governed rules; weekly pulse issued; consultant view inside RBAC | 25 §VS-08 | per-feature gates (doc 15); SD-21: each item enters only with explicit owner approval (doc 24) | per-feature flags (doc 25) | L1 |
+| **VS-09** | Lane 1 + Lane 2 over the proven capabilities — never over an open data table | EPIC-21…27 (P4) | golden-question replay: bounded agent, correct clarification, honest refusal — zero wrong routes, no model numbers | 25 §VS-09 | EXP-05 zero-wrong-route; EXP-07; EXP-09; EXP-10 pass 1 before any L2 | `lane1_agent_enabled` | L1 (L2 only after gates) |
+| **VS-10** | Lane 3 for one real question, one month, resumable (map→verify→reduce) | EPIC-28…30 (P5) | job runs with visible progress; killed and resumed with zero loss/duplication; verified artifact | 25 §VS-10 | EXP-08 | `lane3_analysis_enabled` | L1 |
+| **VS-11** | Catalogue completion + official packs: quarterly report, frozen/live views, reissue/retraction | EPIC-20b remainder + EPIC-31 (P3 tail + P6 packs; CAP-D10) | quarterly pack generated, published, then deliberately retracted + reissued in staging | 25 §VS-11 | pack immutability (T-11); sign-off flow (OD-10); provider-rebase slot if OD-06 signed | per-capability flags + publication workflow | L1→L2 per feature gates |
+| **VS-12** | Pilot, expansion, cutover: parallel run, security/performance/recovery proof, then production | EPIC-32…36 (P6/P7) | pilot-entry evidence pack: EXP-10 full, parallel-run report, DR drill, month-close load rehearsal | 25 §VS-12 | EXP-10 full; parallel-run report; OD-16 sign-off; doc 20 G-gates | rollout flags per doc 20 | L2→L3 |
+
+### 0.5.4 The mandatory stop rule (Amendment §9.4 — binding, every slice)
+
+After every vertical slice, without exception: (1) the coding agent **stops**; (2) presents what was built (demo per doc 25's script); (3) runs the slice's acceptance tests; (4) records the actual gaps (KNOWN_GAPS.md + the acceptance report); (5) obtains the owner's transition approval; (6) **never begins the next slice automatically**. The stop is a gate, not a courtesy — doc 23 §13 items 22–27 make skipping it a MUST-NOT violation.
+
+### 0.5.5 Experiments stay gates — re-bound to the affected feature slice
+
+EXP-01…EXP-11 remain hard gates exactly as §4 defines them; the amendment changes *what a red gate blocks*: the affected feature slice and the L2/L3 exposure of its surfaces — never the whole programme, and never an L1 preview [DECISION SD-18, Amendment §12]. Bindings: **EXP-01→VS-01** (re-confirmed on live runs in VS-03) · EXP-02→the provider decision track, unchanged (rebase executes in VS-11/VS-12) · EXP-03/EXP-04→VS-07/VS-08 capability slices (a VIOL-008-scoped precision check runs inside VS-02) · **EXP-05→VS-07 (floor) and VS-09 (zero-wrong-route)** · EXP-06→VS-06/VS-07 numeric surfaces · EXP-07→VS-09 · **EXP-08→VS-10** · EXP-09→VS-09 (any composed narrative) · EXP-10 pass 1→the first L2 exposure of any slice, full→VS-12 · **EXP-11→VS-04**.
+
+### 0.5.6 Release waves and backlog governance (doc 24 linkage)
+
+The product backlog (doc 24) delivers in **Wave A / Wave B / Wave C** — the amendment's P0/P1/P2 *priorities* renamed so they can never collide with the phase names P0…P7 (doc 24 states the mapping once). Wave A anchors VS-00…VS-07; Wave B rides VS-08+; Wave C rides VS-09+. Committed-by-decision items: **PB-014** (monthly infographic) and the violation-suspicion cluster **PB-006…PB-010** [DECISION SD-21]. **Everything else — all Wave B/C items and any Wave A item not yet bound to an approved slice — requires explicit owner consultation and approval before it enters any implementation slice: the backlog is a standing consultation list, not a work order** [DECISION SD-21].
+
+### 0.5.7 Ticket size under the overlay
+
+Coding tickets are **4–8 agent-hours** each; more than one major migration, or more than one independent UI journey, forces a split [DECISION Amendment §10.1]. Epics (P0-E1…P7-E7 here; EPIC-01…36 in doc 23) stay as planning/estimation containers and the dependency truth — the tickets inside them shrink. The ticket protocol (pre-ticket plan file, ticket DoD, per-cycle evidence, the no-bare-«تم الإنجاز» rule) lives in doc 25 and doc 23 §0.3.
+
+---
+
 ## 1. Sequencing principles (why this order and not another)
 
 1. **The review loop is built first because five capabilities die without it.** MASTER_PROMPT E.15 item 2: the R-P2 semantic-clustering artifact + owner-approval loop unlocks CAP-B3, CAP-C1, CAP-C6, CAP-C8 and the QST/CHAL/DEC cluster naming that CAP-C4 consumes — five of sixteen committed questions [FACT MASTER_PROMPT E.15]. Doc 15 §0 makes the same call for the eval registry. So the propose→review→approve portal (ADR-0012) is a **P0 epic**, not a P2 one, even though its first real payload (clusters, violations) arrives in P2. Building it early also starts the owner-habit: review sessions become routine before they become blocking [REC — alternative: spreadsheet labelling until P2; rejected as the throwaway-then-rebuild path MASTER_PROMPT §4.4(3) forbids].
 2. **Evaluation is a foundation, not a final phase** [FACT GREENFIELD §18 preamble]. Every phase's exit criteria include labelled data *produced*, not just code shipped. The golden suite grows monotonically from P1.
 3. **External lead times start at P0.** OD-13 (second Read.ai OAuth client), OD-07 (internal data access), OD-04 (outbound-data approval), OD-25 (provider candidate procurement), OD-19 (Groq DPA) all have Monsha'at-side or vendor-side lead times the engineering team cannot compress. Every one is a P0 *request* deliverable with a named owner, so waiting overlaps building [REC].
-4. **Nothing user-facing before EXP-09/EXP-10.** The verifier gates and the adversarial suite pass before any pilot user sees an answer — correctness gates are deterministic (I18) and proven by injection, not asserted.
+4. ~~Nothing user-facing before EXP-09/EXP-10.~~ **SUPERSEDED 2026-08-04 [DECISION SD-18, Amendment §0.9 — resolved conflict #1].** The corrected rule: no *production* result reaches an L2 Pilot or L3 Production user before its gates — the verifier gates and the adversarial suite still pass before any pilot user sees an answer, deterministically (I18) and proven by injection, not asserted. But internal **L1 owner previews on synthetic/governed-staging data are mandatory after every slice** (§0.5.4) and do not wait for EXP-09/EXP-10: those gates guard L2/L3 exposure only, never L1 — and L1 success never authorizes L2/L3.
 5. **Correctness over cost; wall-clock engineered explicitly.** Full-coverage extraction is never sampled down for cost [DECISION GREENFIELD §2.5]; instead the plan uses Batch API for backfills (doc 14) and bounded concurrency for rate limits, and P2 includes an explicit throughput-budget epic.
 6. **Additive phases, feature-flagged exposure.** Every phase lands behind server-side flags; rollback is "unflag + revert migration N→N−1", never data surgery. Alembic downgrade paths are written and tested from P0 (ADR-0004).
 
@@ -88,6 +150,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 ## 3. Phase catalogue
 
 ### P0 — Foundations, security baseline, data contracts
+
+> **Execution overlay [SD-18]:** execution reordered under VS-00 (scaffold/CI/stack/authn-z/queue slices of P0-E1…E5/E10), VS-01 (P0-E8 snapshot + EXP-01), VS-02 (P0-E6 portal core) and VS-03 (remaining ops spine); the P0-E7 external-request bundle still files at VS-00 time so every long-lead clock starts first — see §0.5.
 
 **Objective.** A deployable skeleton in the approved environment with CI, migrations, observability, authn/z, the review-portal + eval-registry core, and every long-lead external request formally in flight — so that no later phase ever waits on paperwork it could have started now.
 
@@ -151,6 +215,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 
 ### P1 — Canonical model, independent ingestion, reconciliation
 
+> **Execution overlay [SD-18]:** execution reordered under VS-01 (first 20-session crosswalk + Session-360 over EPIC-10/11/12 subsets) and VS-03 (identity ladder P1-E4, bootstrap P1-E5, transcript store P1-E6/E7, dashboards P1-E10, nightly run); the DS-01/EXP-02 clocks (P1-E8/E9) run alongside unchanged — see §0.5.
+
 **Objective.** The entire corpus — historical (snapshot) and ongoing (live pulls) — standing in `ingest`/`core`/`transcript` under the canonical `advisory_session` hub with explicit identity resolution, immutable provider-versioned transcripts, and deterministic quality scores. After P1, no analytical work ever touches legacy shapes again.
 
 **Prerequisites.** P0 exit; OD-13 client issued (or explicitly still pending → live Read.ai pulls deferred, snapshot-only mode flagged); OD-07 access mechanism confirmed or interim export agreed.
@@ -207,6 +273,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 ---
 
 ### P2 — Enrichment pipeline, taxonomy + review loop live, evaluation foundation
+
+> **Execution overlay [SD-18]:** execution reordered under VS-02 (VIOL-008-only detection + review loop + portal plugin), VS-04 (learning pipeline + EXP-11), and VS-07/VS-08 (EXP-03/EXP-04 benchmarks and the full-corpus backfill bind to the capability slices that consume them) — see §0.5.
 
 **Objective.** The offline enrichment plane produces validated, provenance-stamped findings under versioned taxonomies; the R-P2 clustering artifact and the single review workflow run end-to-end with real owner sessions; the extraction-model and clustering choices are settled by benchmark. This is the phase MASTER_PROMPT E.15 calls the critical path for a third of the product.
 
@@ -268,6 +336,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 
 ### P3 — Semantic metric layer, committed capabilities, rendering/export
 
+> **Execution overlay [SD-18]:** execution reordered under VS-06 (minimal KPI path + dashboard), VS-07 (MVP-five capabilities, EXP-05/EXP-06), and VS-08/VS-11 (remaining tranche); the first testable product does not wait for all 26 capabilities — see §0.5.
+
 **Objective.** Every registered metric compiles deterministically to SQL (never by the model — I2/I3); all 26 committed capabilities (CAP-A1…CAP-D10, per doc 04) answer in Lane 0 with typed envelopes, verified numbers, coverage blocks, and RTL rendering + XLSX/JSON export; the answer-key signing machine is running.
 
 **Prerequisites.** P2 exit (findings + approved taxonomy v1); DS-02 authored; DS-03 protocol agreed ◐OWNER.
@@ -324,6 +394,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 ---
 
 ### P4 — Agentic serving (Lanes 1–2) + evidence retrieval
+
+> **Execution overlay [SD-18]:** execution reordered under VS-09 — see §0.5.
 
 **Objective.** Long-tail questions answered by the bounded agent over the governed toolbelt with deterministic verification; quotes retrievable through scoped keyword/vector/hybrid search; clarification and honest-boundary behaviour complete; the platform survives its first adversarial pass.
 
@@ -382,6 +454,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 
 ### P5 — Lane-3 deep-analysis factory + custom RAG
 
+> **Execution overlay [SD-18]:** execution reordered under VS-10 (EXP-08) — see §0.5.
+
 **Objective.** Any owner-approved question not answerable from existing findings can be answered from raw transcripts + raw structured data by an async, resumable, verifiable job — with promotion of recurring artifacts into governed capabilities and scoped custom evidence collections.
 
 **Prerequisites.** P4 exit (orchestrator-controlled job tools have a home; verifier mature); extraction machinery from P2 (map stage reuses it).
@@ -435,6 +509,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 
 ### P6 — Packs, parallel run, pilots
 
+> **Execution overlay [SD-18]:** VS-05 pulls the minimal single-template pack-render path forward (L1 preview only; publication workflow and completeness gates intact — ADR-0023); the rest executes under VS-11 (packs/quarterly, conditional rebase) and VS-12 (parallel run, pilots, EXP-10 full) — see §0.5.
+
 **Objective.** Monthly/quarterly executive packs (CAP-D10) published under sign-off with frozen/live duality; the platform runs in shadow against the legacy system on a labelled question set; analyst → operational → executive pilots complete; provider decision executed if OD-06 signed.
 
 **Prerequisites.** P3–P5 exit; EXP-10 pass 1 green; DS-03 signed coverage ≥ the pilot capability set; OD-10 publication authority confirmed ◐OWNER.
@@ -487,6 +563,8 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 
 ### P7 — Cutover and operations hardening
 
+> **Execution overlay [SD-18]:** execution reordered under VS-12 — see §0.5.
+
 **Objective.** NIP becomes the production default for advisory-session intelligence; the legacy system is contained (no new analytical routes) and scheduled for retirement; operations, DR, retention, and continuous evaluation run as routine.
 
 **Prerequisites.** P6 exit; cutover checklist (doc 20 §cutover) signed ◐OWNER.
@@ -532,9 +610,9 @@ Minimum viable team: TL + 2×BE + DE + MLE + FE + QE with SRE/SEC fractional —
 
 ---
 
-## 4. Experiment gates EXP-01…EXP-10
+## 4. Experiment gates EXP-01…EXP-11
 
-All ten experiments [FACT GREENFIELD §21] with the eight mandatory fields. "Owner" = accountable role; artifact lands in the eval registry + a signed report in the planning archive. Placement is the phase boundary the gate protects.
+All ten GREENFIELD experiments [FACT GREENFIELD §21], plus **EXP-11 added by the Owner Amendment** [DECISION SD-22, Amendment §6.4], each with the eight mandatory fields. "Owner" = accountable role; artifact lands in the eval registry + a signed report in the planning archive. Placement is the phase boundary the gate protects; under the SD-18 overlay each gate additionally blocks its affected feature slice and that slice's L2/L3 exposure (§0.5.5) — never L1 previews.
 
 ### Gate summary
 
@@ -550,6 +628,7 @@ All ten experiments [FACT GREENFIELD §21] with the eight mandatory fields. "Own
 | EXP-08 | Deep-analysis job | P5 | Lane-3 GA; OD-05 CAP-C2 route confirmation | DS-10 |
 | EXP-09 | Narrative provenance gates | P4 | Any composed narrative to any user | Injection fixtures |
 | EXP-10 | Security/adversarial | P4 (pass 1), P6 (full) | Pilot entry (pass 1); production entry (full) | DS-11 |
+| EXP-11 | False-negative estimation design [DECISION SD-22] | VS-04 (then weekly ops cadence) | Recall claims on detector-quality surfaces; ADR-0022 promotion evidence; OD-32 sizing | Weekly stratified unflagged-session sample + light-review labels |
 
 ### EXP-01 — Source linkage and data completeness
 - **Hypothesis.** Provider meetings join to internal sessions at ≥ 95% via deterministic identifiers on post-go-live cohorts; historical linkage is materially worse and must be declared, not papered over (legacy bridge matched ~8% of report rows [FACT CORE-BRIEF §11]).
@@ -650,6 +729,16 @@ All ten experiments [FACT GREENFIELD §21] with the eight mandatory fields. "Own
 - **Artifact.** DS-11 as permanent T-17 suite; pen-test report + remediation log.
 - **Decision unlocked.** Pass 1 → pilot entry; full → production entry (P7).
 - **Fallback if red.** Blocking: no pilot/production entry until remediated — this gate has no soft fallback by design.
+
+### EXP-11 — False-negative estimation design [DECISION SD-22, Amendment §6.4; added 2026-08-04]
+- **Hypothesis.** A weekly stratified random sample of *unflagged* sessions (no active detector finding), lightly reviewed, yields a stable per-category **estimated recall** with usable confidence intervals at a reviewer load the owner accepts — closing the gap where reviewing only flagged cases measures precision and never true recall [FACT Amendment §1.3-5].
+- **Sample.** Unflagged sessions, stratified by programme × consultant × session duration × session month × transcript quality tier × under-represented categories [DECISION Amendment §6.4]; sample size is this experiment's output, not its input [ASSUME OD-32].
+- **Method.** Draw the weekly stratum-balanced sample; run the light-review protocol (category definitions shown, no anchoring examples — Amendment §6.7); count discovered misses per category; compute estimated recall with Wilson/Clopper–Pearson CIs; iterate size/cadence until CI width and reviewer minutes meet targets; feed misses into `missed_violation_report` → labelled datasets (ADR-0022).
+- **Metric/threshold.** Design accepted when per-category CI width and weekly reviewer load meet the owner-approved targets recorded in OD-32; until then every detector-quality surface labels recall **«تقدير قيد التصميم»** — an estimate pending EXP-11, never a bare number.
+- **Owner.** MLE (accountable); review lead runs the light review; QE designs strata; PO approves the load/cadence trade ◐OWNER.
+- **Artifact.** Sampling design memo + first month of per-category estimates in the eval registry; OD-32 close-out.
+- **Decision unlocked.** Recall claims on SCR-18 (detector quality + learning dashboard); ADR-0022 promotion decisions gain recall evidence (precision alone never promotes); OD-32 resolution.
+- **Fallback if red** (load too high / categories too sparse): biweekly cadence with pooled strata and declared pooling; category-pooled estimates carry their pooling on their face; the platform never silently claims recall it has not measured.
 
 ---
 

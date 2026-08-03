@@ -1,6 +1,6 @@
 # 19 — Observability, Operations, and Disaster Recovery
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-03 (Owner Amendment integrated) · **Author:** Planning package (Fable 5)
 **Depends on:** 07 (runtimes, roles, pools), 08 (schemas, `ops.*`), 09 (pipeline states, reconciliation), 12 (lanes, budgets, circuit breaker), 13 (Lane-3 job model), 14 (model registry), 16 (audit, retention, PII), 17 (`/healthz`, `/readyz`, `system_state`) · **Feeds:** 20 (cutover gates read these dashboards), 21 (ops work packages), 22 (ADR-0019/0020, OD-26), 23 (implementation order)
 **Sources used:** GREENFIELD §17 (fully), §2.5, §15.4, §16.1; MASTER_PROMPT §6 R13/R14/R16, §5.3; arch/06 §5–§7 (backup/migration/ops reality); arch/08 ISS-05/06/12/14/17; CORE-BRIEF §8 (stack), §11 (baselines), §12 (defect pins)
 
@@ -195,6 +195,24 @@ Type key: C=counter, G=gauge, H=histogram. Source key: WEB=web runtime, WRK=work
 | database health and pool pressure | 2.6 rows 1–2 |
 | export and sensitive-evidence access | 2.6 rows 5–6 |
 
+### 2.8 Operational-product SLOs and alerts (Owner Amendment 2026-08-03)
+
+The Owner Amendment's operational loops (doc 07 §4.3) get first-class SLOs [DECISION owner 2026-08-03 / Amendment §12-19]. The seven new ops metrics are **registry metrics** (doc 11 registers them; names exact): `nightly_run_success`, `data_completeness`, `source_join_rate`, `review_backlog_age`, `suspected_cases_open`, `detector_acceptance_rate`, `action_completion_rate`. Prometheus projections below follow §1.3 naming; sources are SQLX gauges over the amendment entities (doc 08: `pipeline_run`, `data_quality_issue`, `reconciliation_case`, `review_case`, `detector_release`, `shadow_result`, `monthly_infographic`, `service_improvement_action`, `notification_delivery`). None of these dashboards may show a suspected count merged with an approved count [DECISION SD-19/SD-20].
+
+| SLO / signal | Metric (registry name → Prometheus projection) | Threshold → severity |
+|---|---|---|
+| Nightly run success before deadline | `nightly_run_success` → `nip_ops_nightly_run_success` (0/1 per data-date) + `nip_ops_nightly_run_state` (exact enum `queued → running → partial → succeeded → failed → cancelled → superseded`) | not `succeeded` by 06:00 AST → SEV-2 [ASSUME OD-28: start 02:00 Asia/Riyadh, configurable; hourly Read.ai incremental allowed, nightly stays authoritative]; `failed` → SEV-2 immediately, 2 consecutive nights → SEV-1; `superseded` without a replacing `succeeded` run same day → SEV-2 |
+| Run partial / per-source failure | `nip_ops_nightly_run_state{state="partial"}` + failing-source label from `pipeline_step_run` | any `partial` → SEV-3 steward ticket naming the source (a partial is loud, never a silent success — Amendment §4.4-3); same source `partial`/failed 3 consecutive nights → SEV-2 |
+| Per-source freshness | existing `nip_ingest_lag_seconds` (§2.1) extended with the `SRC-DATAHUB-*` sub-feed labels (SRC-DATAHUB-SESSION / -BENEFICIARY-EVAL / -CONSULTANT-EVAL / -OUTCOME / -DIRECTORY / -REFERENCE, doc 05) | per-contract SLA breach → SEV-2 (rule unchanged from §2.1) |
+| Source join rate floor | `source_join_rate` → `nip_ops_source_join_rate` (daily cohort, both directions: provider sessions matched to DataHub, DataHub sessions with transcript) | below the doc 05 §10.2 target 3 consecutive days → SEV-2; collapse below the legacy baseline → standing gate-freeze trigger (doc 20 §4 rollback trigger 3) |
+| Month completeness (infographic gate) | `data_completeness` → `nip_ops_data_completeness` per closing month | < 0.98 at month-close +1 day [ASSUME Amendment §13 gate: 98% terminal-state sessions] → SEV-2 to steward + service owner; a draft built on an override renders the override on its face (never silent) |
+| DQ backlog size/age | `nip_ops_dq_backlog_depth` / `nip_ops_dq_backlog_oldest_seconds` over open `data_quality_issue` + `reconciliation_case` | depth > 200 or oldest > 7d → SEV-3 steward; oldest > 14d → SEV-2 |
+| Review backlog vs SLA | `review_backlog_age` → `nip_ops_review_overdue_ratio` by SLA class + `suspected_cases_open` → `nip_ops_suspected_cases_open` | SLA classes: normal 7d / high-priority 2d [ASSUME OD-30]; any high-priority case past 2d → SEV-2 to review lead; overdue ratio > 10% weekly → SEV-2; `suspected_cases_open` ×2 vs 4-week median → SEV-3 (detector or staffing drift). The stricter §2.5 72h oldest-item alarm stands — the tighter rule always prevails (no weakening) |
+| Detector acceptance drift | `detector_acceptance_rate` → `nip_ops_detector_acceptance_rate` per active `detector_release` (share of suspected cases reviewers confirm, rolling 7d, per category) | drift beyond ±10 points vs the release's promotion baseline → SEV-2 to model owner + review lead; sustained drop triggers the rollback assessment of doc 14 §6.5 — rollback is instant and never loses review decisions [DECISION SD-22] |
+| Infographic draft/publish deadlines | `nip_ops_infographic_state` per period (lifecycle enum) | no `draft` by the morning of day 2 after the completeness gate passes [ASSUME Amendment §7.3] → SEV-2 to service owner; not `published` by day 5 → SEV-2 to the publication authority (OD-10/OD-29) — aligned with the §2.5 pack-deadline row |
+| Action overdue rate | `action_completion_rate` → `nip_ops_action_completion_rate` + `nip_ops_actions_overdue_ratio` | overdue ratio > 30% for 14d → SEV-3 to the action owner's service owner [ASSUME OD-34]; D4 panel informational |
+| Notification delivery failures | `nip_ops_notification_failures_total` by channel (from `notification_delivery` outcomes) | failures on 3 consecutive digests or > 5% of daily deliveries → SEV-2; an expected morning digest with zero deliveries → SEV-2 (the digest silently not arriving is exactly the failure the digest exists to prevent) |
+
 ---
 
 ## 3. Structured logging and full reconstructability
@@ -297,6 +315,20 @@ Five provisioned dashboards (JSON in repo under `ops/grafana/`; UI edits forbidd
 **D5 — Data quality (CAP-D9 operator mirror).** Join-rate KPIs per monthly cohort vs targets (doc 05 §10.2) · `resolution_status` distribution (the anti-`'PENDING'` view) · speaker_role coverage · attribute-conflict (Q5) trend · coverage/exclusion reasons emitted in answers · findings kept/dropped reasons · DQ observations feed (doc 05 §10.3) · quote-verification failure trend by context.
 
 The user-facing CAP-D9 capability reads the same governed queries as D5 [DECISION doc 05 §10.3 — one source of truth; the operator dashboard is not a second computation].
+
+**D6 — Ops centre mirror (Owner Amendment).** SCR-14 «مركز تشغيل البيانات» (doc 18) is the user-facing surface of the run/watermark/DQ state; its operator mirror adds: last run + state (exact enum), per-source status and last success, new/updated session counts, per-step durations, unmatched sessions, sessions without transcript, new suspicion count, overdue reviews, current-month completeness — every figure from live queries, never hardcoded (the §0 hardcoded-healthcheck lie is the pin).
+
+### 4.1 Morning Digest — «صباحيات الخدمة» (CAP-OPS-10, PB-016, SCR-21) — an ops artifact, not a dashboard
+
+Issued by the Notification service (doc 07 §4.3) after the nightly run reaches `succeeded` — or `partial`, flagged as partial on its face — to subscribers per `notification_subscription` (channels per OD-29). Content [DECISION owner 2026-08-03 / Amendment §11.1], every item deep-linking to its screen:
+
+1. new sessions ingested · 2. new «اشتباه مخالفة» cases (count only) · 3. review cases past SLA · 4. new 1–2★ beneficiary ratings · 5. sessions ended without clear steps · 6. DataHub/Read.ai source issues · 7. the day's top alert or deviation.
+
+Payload rules per doc 16 §2.6-5: counts and login-gated links only — no suspected-case detail, no names, no draft content. Deliveries land in `notification_delivery` with outcome; the §2.8 delivery-failure alert reads that ledger, and G-SEC-12 (doc 16) regression-tests the payload policy.
+
+### 4.2 The run manifest — the nightly run's evidence artifact
+
+Every `pipeline_run` terminal state writes a manifest [DECISION owner 2026-08-03 / Amendment §4.3]: `run_id`, start/end, per-source watermarks, records pulled/new/updated/rejected, sessions completed/excluded/late, per-step status and durations, classified errors, retry counts, code + contract + model + prompt + taxonomy versions, and DLQ/DQ-queue links. Stored in `nip-artifacts` (MinIO, mirrored nightly per §9.1), downloadable from SCR-14, referenced by `manifest_uri` on the `pipeline_run_completed` audit row (doc 16 §2.6) and by `GET /api/v1/pipeline-runs/{run_id}` (doc 17 §13A.1). The manifest is the first artifact an operator opens in any RB-triage and is slice-acceptance evidence for VS-03 (doc 25).
 
 ---
 
@@ -552,6 +584,7 @@ archive-async=y
 - **Procedure (scripted as `opsctl drill restore`):** provision scratch instance → `pgbackrest restore --type=time` to a random point inside the PITR window → run verification suite: Alembic head matches expectation for that time; per-table row counts vs nightly `ops` digests; golden-suite smoke (10 Lane-0 questions) against the restored DB; R7 spot-verification of 100 random stored quotes against restored transcript turns.
 - **Evidence:** drill writes `ops.audit_event(action='restore_drill')` with duration, RPO/RTO achieved, checks passed/failed, and a signed report to `nip-artifacts`. `nip_plat_restore_drill_age_days` > 100 → SEV-3. **A drill that was not evidenced did not happen** — the metric reads the audit row, not a human claim.
 - **Pass criteria:** achieved RTO ≤ target (§10.1), zero verification failures; any failure opens a SEV-2 with the backup chain frozen (no prune) until resolved.
+- **Owner Amendment extension — drill scope covers the new entities [DECISION owner 2026-08-03 / Amendment §12-19]:** the verification suite additionally asserts on the restored instance: `review_case`/`review_event` append-only chains gap-free (per-case `seq` dense, no orphan events) and the six-decision history of a 50-case sample matching the pre-drill digest; `label_dataset` immutability (stored checksums re-verify; holdout membership unchanged); `detector_release` lineage intact (label_dataset_version + prompt_sha + thresholds reproduce); `monthly_infographic` published payloads re-render **byte-identical** from the restored artifact (web/PDF/PNG payload sha256 equal — SD-19); `service_improvement_action`/`action_event` counts vs digests; `notification_subscription`/`notification_delivery` ledgers consistent. A restore that loses a review decision or resurrects a retracted infographic is a **failed drill**.
 
 ---
 
@@ -596,7 +629,7 @@ Three snapshot classes, one rule each:
 | Cadence | Activity | Evidence artifact |
 |---|---|---|
 | Continuous | WAL archiving; alert evaluation; synthetic golden probe hourly | metrics + `ops.audit_event` |
-| Daily | pgBackRest diff; MinIO mirror; pipeline reconciliation roll-up review (D2) | backup verify log; roll-up report row |
+| Daily | pgBackRest diff; MinIO mirror; pipeline reconciliation roll-up review (D2); Morning Digest «صباحيات الخدمة» issued after nightly-run success (§4.1) with delivery outcomes checked | backup verify log; roll-up report row; `notification_delivery` ledger + run manifest (§4.2) |
 | Weekly | pgBackRest full + verify; ops review (SEV-3 queue, threshold tuning §2, spend report D3 to owner) | review minutes in repo |
 | Monthly | capacity snapshot vs §8 model; model-registry deprecation sweep (I17); restore-drill age check; retention jobs (OD-08) execution report | `ops.audit_event(action='ops_review')` |
 | Quarterly | **restore drill (§9.4)** · access review (doc 16 §2: role grants, break-glass log) · alert-threshold recalibration against measured baselines · DR tabletop on one §10.1 scenario | drill report; access-review sign-off |
@@ -614,6 +647,10 @@ Three snapshot classes, one rule each:
 | OD-03 | Groq account tier | developer tier (300k TPM class) | §8.3 full-pass math compresses ~3×; §2.2 headroom thresholds |
 | OD-08 | Retention windows | Loki 90d; R13/audit ≥ 18 mo; monthly fulls 18 mo | §3.5, §9.1 tables |
 | OD-16 | SIEM mandate | local stack only; ship-copy on mandate | §1.1 export pipelines |
+| OD-28 | Nightly-run start time + completion SLA | 02:00 Asia/Riyadh start, configurable; success deadline 06:00 AST; hourly Read.ai incremental allowed, nightly authoritative | §2.8 deadline alerts; §4.2 manifest cadence |
+| OD-29 | Infographic/notification channels | Portal + approved email; Teams/other later | §4.1 digest delivery; §2.8 delivery-failure alert routing |
+| OD-30 | Review SLA + reviewer staffing/assignment | 7d normal / 2d high-priority; assignment by review lead | §2.8 `review_backlog_age` classes; alert routing to review lead |
+| OD-34 | Action Center ownership + closure authority | service owner owns actions; leadership sees aggregate status/impact | §2.8 action-overdue alert routing |
 
 **Revisit triggers for this whole document:** first SEV-1 (post-incident review re-opens the relevant section) · any restore drill miss · freshness SLO missed two weeks running · ×2 volume trigger (§8.6) · Groq tier confirmation (OD-03) · second approved zone confirmed (OD-01) → upgrade §10.1 from best-effort to committed.
 

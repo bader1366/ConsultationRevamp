@@ -1,8 +1,8 @@
 # 23 — Opus 5 Implementation Handoff
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 04 (capability contract), 07 (architecture + module layout), 08 (data model), 09 (pipelines), 10 (methodology), 11 (semantic layer), 12 (serving), 13 (Lane-3), 14 (models), 15 (evaluation), 16 (security), 17 (API), 18 (UX), 20 (migration), 21 (roadmap), 22 (ADR/OD register) · **Feeds:** the implementation itself
-**Sources used:** GREENFIELD §23-23 (this document's contract), §7 (I1–I18), §8, §14, §18, §20, §24; MASTER_PROMPT §6 (R1–R16), §12–§13; CORE-BRIEF in full; every sibling document by section as cited inline
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-04 (Owner Amendment 2026-08-03 integration — §0.3 execution protocol, VS order, MUST-NOT 22–27, migrations 0014/0015) · **Author:** Planning package (Fable 5)
+**Depends on:** 04 (capability contract), 07 (architecture + module layout), 08 (data model), 09 (pipelines), 10 (methodology), 11 (semantic layer), 12 (serving), 13 (Lane-3), 14 (models), 15 (evaluation), 16 (security), 17 (API), 18 (UX), 20 (migration), 21 (roadmap + §0.5 VS overlay), 22 (ADR/OD register), 24 (backlog waves), 25 (VS delivery/acceptance protocol) · **Feeds:** the implementation itself
+**Sources used:** GREENFIELD §23-23 (this document's contract), §7 (I1–I18), §8, §14, §18, §20, §24; MASTER_PROMPT §6 (R1–R16), §12–§13; CORE-BRIEF in full; every sibling document by section as cited inline; Owner Amendment 2026-08-03 §§0, 9, 10, 12, 15 (SD-18…SD-22 — doc 02 register)
 
 This document is the contract between the planning package and the implementing model (Opus 5). It is deliberately repetitive with the rest of the package in one direction only: everything here is *derivable* from docs 04–22, but nothing here may be *contradicted* by an implementation choice. When this document and a sibling document disagree on a **convention** (a name, an ID, an order), this document wins and the sibling gets a fix-up PR; when they disagree on **substance** (a schema shape, a threshold, a method), the sibling wins and this document gets the fix-up — substance owners are named per topic in §14 [REC — mirrors the CORE-BRIEF rule that produced the package].
 
@@ -12,8 +12,8 @@ This document is the contract between the planning package and the implementing 
 
 ### 0.1 Operating loop
 
-1. Confirm the 00-INDEX §6 start gate is satisfied (ADRs + environment signed; external requests filed).
-2. Execute epics **in the §5 order**. An epic's "blocked by" list is a hard precondition; its "definition of done" and "tests that must exist" are merge conditions, not aspirations.
+1. Confirm the 00-INDEX §6 start gate is satisfied (ADRs + environment signed; external requests filed) — **including the amended-package approval (doc 22 §5 item 21): the Owner Amendment of 2026-08-03 is integrated and the amended planning package is signed. No product code before that signature** [DECISION Amendment §0; SD-18].
+2. **Execution follows doc 25's vertical-slice order (VS-00…VS-12; doc 21 §0.5) — not the §5 epic sequence** [DECISION SD-18, Amendment §15; replaces the former "execute epics in the §5 order" instruction — recorded in §0.2]. **The FIRST executable order after owner approval of the amended package is VS-00 ONLY** — then stop → demo → acceptance report → owner approval → **VS-01**, and so on, one slice at a time. Within a slice, tickets run in dependency order; an epic's "blocked by" list remains a hard precondition wherever its tickets are pulled into a slice; "definition of done" and "tests that must exist" remain merge conditions, not aspirations. §5's epics stay as the ticket inventory (planning containers), re-cut into ≤4–8h tickets per §0.3.
 3. Every PR carries the §12 evidence block. Every bug fix carries a pin (§9.6). Every model/prompt change carries a replay report (HG-8, doc 15 §6.2).
 4. When reality contradicts the plan (a source field missing, a threshold unreachable, an API of a dependency different from documented): do **not** improvise silently. Open a deviation note referencing the doc+section, choose the safest workable interpretation, record it — and if it needs an owner, register OD-26+ in doc 22 (never reuse IDs) [FACT doc 22 §6.1].
 
@@ -32,6 +32,57 @@ The parallel-authoring drift these rows resolve was **normalized across the pack
 | Doc 08 census | **78 tables** incl. `serve.capability_registry` + `serve.capability_paraphrase` (DDL doc 04 §1.3, migration 0009) and `evidence.custom_collection` + `evidence.custom_collection_unit` (DDL doc 13 §9.0, migration 0010) | doc 08 §1 briefly said "74 tables" before absorbing them |
 | EXP-03 harness home | EPIC-06 here (= P0 *deliverable* 12) | doc 21 P2 prerequisite briefly cited a nonexistent epic "P0-E12" |
 | Compute posture | **CPU-only environment; all generative inference on Groq; embeddings are the only local models (CPU, ONNX/int8); reranker offline-only** [DECISION owner 2026-08-03; SD-17 doc 02] | earlier drafts carried "GPU optional" and an "on-prem OSS fallback if OD-04 fails" — both removed 2026-08-03 |
+| Execution order | **doc 25's VS order: VS-00 first, one slice at a time, mandatory stop after each** [DECISION SD-18, Amendment §15; §0.3] | "execute epics in the §5 order" (was §0.1(2); replaced 2026-08-04 — §5 remains the ticket inventory) |
+
+### 0.3 Execution protocol (Owner Amendment §10 — binding)
+
+Integrated 2026-08-04 [DECISION SD-18…SD-22; Owner Amendment 2026-08-03]. Doc 25 owns the full delivery protocol (per-slice demo scripts, acceptance checklists, exposure levels L0–L3, the agent state-file template); this section carries the agent-binding core. It weakens nothing above or below — it adds granularity and stops.
+
+#### 0.3.1 Slice order and the VS→EPIC mapping [REC]
+
+Execution follows the vertical slices VS-00…VS-12 (doc 21 §0.5; doc 25). **After owner approval of the amended package the first executable order is VS-00 only** — then stop → demo → acceptance report → owner approval → VS-01 [DECISION Amendment §15]. The EPIC definitions in §5 stay **intact as the ticket inventory and dependency truth**; the mapping below [REC — refined at each stop gate; doc 25 keeps the operative copy] names what each slice pulls:
+
+| Slice | Pulls from the epic inventory |
+|---|---|
+| **VS-00** | EPIC-01 · EPIC-02 · EPIC-03-subset (stack, honest health, observability skeleton) · EPIC-04-subset (OIDC + seven roles + deny-by-default) · EPIC-07-subset (queue proof-of-life) + Home page + PII-free seed fixture |
+| **VS-01** | EPIC-09 (snapshot + EXP-01) · EPIC-10 · EPIC-11 (fixture/replay mode until OD-13) · EPIC-12-subset (first SRC-DATAHUB sub-feeds: -SESSION, -BENEFICIARY-EVAL, -CONSULTANT-EVAL) + **Session-360 slice** (SCR-15; `GET /sessions/{id}/360`) |
+| **VS-02** | EPIC-16-slice (**VIOL-008 only** [ASSUME OD-35] + migration 0014 review-case entities) · EPIC-18-slice (violations payload plugin, riding the EPIC-08 portal core) + **review-case APIs** (`GET /violations/suspected` · `GET /violations/cases/{id}` · `POST /violations/cases/{id}/review-events` · `POST /sessions/{id}/missed-violation`) + the SCR-08 upgrade («اشتباه مخالفة») |
+| **VS-03** | EPIC-13 · EPIC-14 · EPIC-15 + **pipeline-run entities** (nightly orchestrator, per-source watermarks, DLQ visibility — migration 0004 family extensions per doc 08) + SCR-14 «مركز تشغيل البيانات» |
+| **VS-04** | **Learning pipeline** (migration 0014 learning entities: label datasets, detector candidates/releases, shadow results, missed-violation reports; EXP-11 design; SCR-18) — the ADR-0022 lifecycle end-to-end on VS-02's decisions |
+| **VS-05** | **Infographic slice** (migration 0015 part: `monthly_infographic` + sections + publication events; one fixed template; SCR-20; the minimal pack-render path pulled forward from EPIC-31, **L1 only**) — ADR-0023 |
+| **VS-06** | **Dashboard + actions** (migration 0015 part: actions + notifications; minimal KPI path over an EPIC-19 subset; SCR-19; action lifecycle APIs `GET/POST/PATCH /actions`) |
+| **VS-07** | EPIC-19 + EPIC-20 **MVP-five** (the five Amendment §9.3 capabilities; EXP-05/EXP-06 inside the slice; EXP-03/EXP-04 slices where capability 5 consumes extraction/clusters) |
+| **VS-08+** | Remaining per doc 21 §0.5: VS-08 = EPIC-20b operational slices · VS-09 = EPIC-21…27 · VS-10 = EPIC-28…30 · VS-11 = EPIC-20b remainder + EPIC-31 · VS-12 = EPIC-32…36 |
+
+#### 0.3.2 Ticket size, split rules, and the pre-ticket plan file [DECISION Amendment §10.1–§10.2]
+
+- A coding ticket is **4–8 agent-hours**, completable and reviewable as one unit. **Split** when it needs more than one major migration or more than one independent UI journey. At most **one domain** per ticket unless the ticket *is* a small vertical slice that requires crossing. **Never** bundle unrequested "hygiene fixes" into a feature ticket.
+- Epics stay planning containers; the tickets inside them shrink. (This strengthens §5's former "XL→≤L" rule; nothing relaxes.)
+- **Before touching any file**, write the ticket's plan file (`docs/plans/<ticket-id>.md` [REC — doc 25 owns the template]) with all **11 fields**: (1) goal · (2) out-of-scope · (3) files expected to change · (4) proposed migration · (5) API contract · (6) UI flow · (7) tests to be written before/with the code · (8) fixture data · (9) demo steps · (10) rollback · (11) risks. Only after the plan file exists does implementation start.
+
+#### 0.3.3 Ticket Definition of Done [DECISION Amendment §10.3]
+
+A ticket is complete only when **all** of these exist: complete code with no hidden stubs · a migration that upgrades and is tested · unit tests · integration/API tests · a UI test or scripted manual acceptance (per stage) · fixture or factory · an authorization test · the required observability events/metrics · documentation updates · **`docs/STATE.md` updated** · **`PRODUCT_BACKLOG.md` updated** (the repo mirror of doc 24) · **`KNOWN_GAPS.md` updated** · the run/test command and its result · **an explicit list of what was NOT done**. This composes with §12's PR evidence blocks — both are mandatory; neither substitutes for the other.
+
+#### 0.3.4 Execution prohibitions (Amendment §10.4) — merged into §13
+
+The amendment's ten prohibitions map onto the MUST-NOT list without duplication: №4 (never modify a test gate to pass a failing feature) is MUST-NOT 9; №6 (never hide an adapter/model-call failure as an empty list) is coding convention §10(5) + I16 / MUST-NOT 18 + the EPIC-01 CI grep; №9 (never publish a new model/prompt straight from reviewer results without evaluation and approval) is ADR-0022 + I17/HG-8 + §12(7); №5 (never close a user-facing backend ticket without its API/UI/demo) is enforced by §0.3.3's DoD. The remaining six were not previously explicit and are added as **MUST-NOT items 22–27** (§13).
+
+#### 0.3.5 Feature flags [DECISION Amendment §10.5]
+
+Every major feature runs behind its exact flag: `session_360_enabled` · `violation_review_enabled` · `nightly_consolidation_enabled` · `monthly_infographic_enabled` · `action_center_enabled` · `lane1_agent_enabled` · `lane3_analysis_enabled`. A flag is an isolation/exposure control, **never a substitute for finishing the feature**; a deferred item behind a closed flag must appear in `KNOWN_GAPS.md` (MUST-NOT 24).
+
+#### 0.3.6 Data ladder during development [DECISION Amendment §10.6]
+
+(1) small synthetic fixture covering the critical cases → (2) limited anonymized snapshot for integration tests, after approval → (3) staging cohort of 20–100 sessions → (4) one full month → (5) full-corpus backfill only after resumability, cost, and DQ are proven. Skipping a rung is MUST-NOT 26. The ladder sequences *when* data is processed during development; it never licenses sampling a production answer below full coverage — MUST-NOT 12 stands untouched.
+
+#### 0.3.7 Per-cycle outputs [DECISION Amendment §10.7]
+
+Every execution cycle delivers: one clear commit/patch · the modified-files report · the migration ID (if any) · test commands and their results · a screenshot or precise demo description for any UI · seed/demo data IDs · known limitations and issues · **the decision required before continuing**. **A bare «تم الإنجاز» — or any generic "done" — without this evidence is not a report; the ticket counts as unfinished.** These outputs feed §12's PR evidence blocks and the slice acceptance report (doc 25).
+
+#### 0.3.8 The stop rule
+
+After every slice: **stop → present what was built → run the acceptance tests → record the gaps → owner approval → only then the next slice — never automatically** (doc 21 §0.5.4; MUST-NOT 27). L1 owner previews happen after every slice on synthetic/governed-staging data; EXP-09/EXP-10 and the release gates guard **L2/L3 exposure only** [DECISION SD-18, Amendment §0.9 — resolved conflict #1].
 
 ---
 
@@ -123,7 +174,8 @@ nwafeth-intelligence/
 │   ├── unit/  structural/  golden/  datasets/       # golden numeric payloads + paraphrase sets live in git
 │   └── fixtures/                   # synthetic 120-session corpus + seed script (doc 15 §8); NO real transcript text
 ├── ops/                            # compose files, grafana dashboards, alert rules, runbooks RB-1…9
-└── docs/                           # BUGS.md pin ledger (MASTER_PROMPT §13.3 format), STATE.md, deviation notes
+└── docs/                           # BUGS.md pin ledger (MASTER_PROMPT §13.3 format), STATE.md, PRODUCT_BACKLOG.md (doc 24 mirror),
+                                    #   KNOWN_GAPS.md, plans/ (pre-ticket plan files, §0.3.2), deviation notes
 ```
 
 ### 3.2 Dependency rules (import-linter, CI-enforced — copy of doc 07 §8.2, binding)
@@ -159,6 +211,8 @@ common → registry → {repository, inference} → {ingest, enrich, jobs} → a
 ---
 
 ## 4. Implementation order — rationale in five sentences
+
+> **[Amendment §9 — SD-18]** The five sentences below remain true as *dependency* rationale. The *execution order* is now the vertical-slice order of doc 25 (§0.3.1): VS-00 first, one slice at a time, mandatory stop after each — slices pull epic subsets forward without ever violating a "blocked by" edge or an experiment gate's L2/L3 binding.
 
 1. **Foundations before data, data before findings, findings before answers, answers before agents, agents before jobs** — each layer's tests are the next layer's substrate (doc 21 §1).
 2. **The review portal and eval registry come first among features** (EPIC-08 ≺ everything analytical) because five capabilities die without the R-P2 owner loop, DS-02/DS-03 gate all routing and numbers, and owner-habit formation is the true critical path [FACT MASTER_PROMPT E.15; doc 15 §0].
@@ -218,7 +272,9 @@ External clocks that intersect this graph (not epics, but gates on them): OD-13 
 
 ## 5. The first 20 implementation epics — strict dependency order
 
-Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc refs · Definition of done (DoD) · Tests that must exist · Blocked by. Sizes inherit doc 21's S/M/L/XL; any XL must be split into ≤L tickets before starting.
+> **[Amendment §9/§10 — SD-18]** The epics below are the **ticket inventory and dependency truth**, no longer the execution sequence: slices pull epic subsets per the §0.3.1 mapping, and "blocked by" lists remain hard preconditions wherever a ticket lands. Definitions are kept intact deliberately — nothing in them is deleted or weakened by the overlay.
+
+Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc refs · Definition of done (DoD) · Tests that must exist · Blocked by. Sizes inherit doc 21's S/M/L/XL; under the amendment **every epic of any size is split into ≤4–8h tickets before starting** (§0.3.2) [DECISION Amendment §10.1 — strengthens the former "XL→≤L" rule].
 
 ---
 
@@ -504,7 +560,7 @@ Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc re
 
 ---
 
-### 5.1 The horizon beyond the first 20 (execute in doc 21 order; IDs reserved here so tickets never renumber)
+### 5.1 The horizon beyond the first 20 (IDs reserved here so tickets never renumber; execution follows the doc 25 VS order — doc 21 §0.5)
 
 | ID | Phase | Scope (doc 21 epic) | Gate |
 |---|---|---|---|
@@ -544,9 +600,13 @@ Format: **EPIC-nn (maps to doc 21 epic) — goal.** Exact deliverables · Doc re
 | 0011 | jobs | `analysis_job`, `question_fingerprint`, `corpus_snapshot`, `job_partition`, `session_task`, `job_finding`, `job_aggregate`, `promotion_candidate` | P5 epics |
 | 0012 | packs | `pack` (immutability trigger = the T-11 pin), `pack_session_set`, `pack_finding`, `publication` (append-only), supersession/retraction | P6 epics |
 | 0013 | grants + masking | full role→grant matrix per doc 16 §2.4; masking views `core_masked.*`, `findings_masked.*`; G-SEC-2 grant-diff baseline committed | EPIC-04 hardening, before pilots |
+| 0014 | review-case + learning *(Amendment 2026-08-04)* | finding/case/event separation per Amendment §5.5: `review_case`, `review_event` (append-only), `review_assignment`, `missed_violation_report`; learning loop per ADR-0022: `label_dataset`, `label_dataset_item`, `detector_candidate`, `detector_release`, `shadow_result` — exact homes/names per doc 08's amended assignment | VS-02 (review-case part) · VS-04 (learning part) |
+| 0015 | actions + notifications + infographic *(Amendment 2026-08-04)* | `service_improvement_action`, `action_event`, `action_metric_baseline`; `notification_subscription`, `notification_delivery`; `monthly_infographic`, `infographic_section`, `publication_event` with byte-parity pack-artifact linkage (ADR-0023) — exact homes/names per doc 08's amended assignment | VS-05 (infographic part) · VS-06 (actions + notifications part) |
 | rolling | partitions | monthly partition migrations for `finding`, `tool_call`, `audit_event`, emitted 12 months ahead by tooling, committed as migrations — never runtime `CREATE TABLE IF NOT EXISTS` | continuous |
 
 Rules: every migration has a real downgrade; `legacy_snapshot` is restored (EPIC-09), never migrated; grants live in migrations so G-SEC-2 can diff `information_schema` against the matrix in CI; ORM-vs-head drift check (doc 08 C11) runs on every push.
+
+Amendment note (2026-08-04): 0014/0015 are content-block reservations matching doc 08's amended assignment; the nightly pipeline-run visibility entities (`pipeline_run`/`pipeline_step_run`/`source_watermark`/`dead_letter_item` semantics) extend the 0004 ingest family where doc 08 finds them not already covered by `ingestion_run`/`source_cursor`/`dlq_item`. Under the VS overlay the *authoring* order of blocks may differ from the numeric sequence (e.g. the 0014 review-case block lands with VS-02 before the 0010–0012 blocks are authored); the Alembic down-revision chain follows actual authoring order — the numbers are stable content labels (doc 08 owns final assignment), and the `0001→head→0001` CI proof is unaffected.
 
 ## 7. API build order (doc 17 §1 endpoint numbers)
 
@@ -605,6 +665,8 @@ Contract discipline from the first endpoint: RFC 7807 errors, no 200-on-failure,
 11. **Naming.** Tables singular snake_case; metrics `nip_<plane>_*` (doc 19 §1.3); capability IDs immutable; new promoted capabilities take `CAP-E##` (doc 04 §9.2).
 
 ## 11. Definition of done per phase (condensed from doc 21 exit criteria — the phase gate is the full doc 21 list)
+
+> **[SD-18]** Under the execution overlay the operative stop unit is the **slice** (acceptance per doc 25; stop rule §0.3.8). The phase gates below remain the unchanged dependency/gate truth: a phase "exits" when all its criteria are green, whichever slices delivered them — and a slice's L2/L3 exposure always waits for the owning phase's gates.
 
 | Phase | Done means (headline criteria) |
 |---|---|
@@ -674,7 +736,7 @@ A PR missing any block is returned without review. A PR whose pasted output disa
 
 Structural prohibitions. Each cites its authority; several are also mechanically enforced — the list exists so no ambiguity survives even where enforcement lags.
 
-1. **MUST NOT serve any user-visible surface before its gate**: no numeric answer before EXP-06 green; no composed narrative before EXP-09; no pilot exposure before EXP-10 pass 1; no production before EXP-10 full + OD-16 [FACT doc 21 §1.4, §4].
+1. **MUST NOT serve any user-visible surface before its gate**: no numeric answer before EXP-06 green; no composed narrative before EXP-09; no pilot exposure before EXP-10 pass 1; no production before EXP-10 full + OD-16 [FACT doc 21 §1.4, §4]. **Exposure note [DECISION SD-18, Amendment §0.9 — resolved conflict #1]:** these gates bind **L2 (pilot) and L3 (production)** exposure; the mandatory L1 owner previews after every slice (synthetic/governed-staging data, feature acceptance only, no operational decisions) do not wait for EXP-09/EXP-10 — and passing L1 never authorizes L2/L3. Numeric surfaces still ride their own slice gates (EXP-06 sits inside VS-06/VS-07's stop gates).
 2. **MUST NOT run full-corpus outbound extraction before OD-04 approval** — staging-subset only until the compliance file closes [ASSUME OD-04; doc 16 §4].
 3. **MUST NOT let a model author SQL, name schema objects, or compute/transform numbers** — including "just this once" aggregations in reduce stages or renderers (I2/I3; ADR-0009/0015).
 4. **MUST NOT implement ASR correction, transcript cleanup, or any transcript-text mutation** — there is no `text_corrected` column and never will be; a "fix the transcript" need routes to provider rebase (I6; ADR-0007; GREENFIELD §2.6).
@@ -695,6 +757,15 @@ Structural prohibitions. Each cites its authority; several are also mechanically
 19. **MUST NOT depend on parallel tool calls or more than one tool decision per model turn** (doc 14 §5; GREENFIELD §10.5).
 20. **MUST NOT begin an epic whose "blocked by" list is unsatisfied**, even when locally convenient — the order encodes gate dependencies, not preference (§5).
 21. **MUST NOT introduce a GPU-dependent component or a self-hosted generative model** — the environment is CPU-only and all generative inference goes through the single Groq client; the only local models are CPU embeddings (ONNX/int8), and the reranker runs offline only; **and MUST NOT send transcript text to any external service other than the gated Groq client — embeddings/reranking run only in-environment**, or doc 14 §1.6's data-residency claim (which doc 16's outbound matrix depends on) silently breaks [DECISION owner 2026-08-03; SD-17 doc 02].
+
+*Items 22–27 added 2026-08-04 — the Owner Amendment's execution prohibitions not already covered above (mapping in §0.3.4) [DECISION SD-18, Amendment §10.4].*
+
+22. **MUST NOT work multiple large epics — or multiple slices — in parallel as one agent**: one slice at a time, tickets sequential within their dependency order; parallelism is the orchestrator's decision, never the coding agent's (Amendment §10.4-1; SD-18).
+23. **MUST NOT dump skeleton files with deferred logic** — no batches of empty modules "to be filled later"; a ticket ships working, tested code for its scope or it does not ship (Amendment §10.4-2).
+24. **MUST NOT leave a TODO/stub inside an accepted path unless it sits behind a *closed* feature flag AND is recorded in `KNOWN_GAPS.md`** — hidden deferral is the defect; declared, flagged deferral is the mechanism (Amendment §10.4-3; §0.3.5).
+25. **MUST NOT hardcode demo values, counts, or percentages in any dashboard or status surface** — screens read real run/metric/watermark data even in demos; VS-00's health page and VS-03's «مركز تشغيل البيانات» are explicitly accepted against this (Amendment §10.4-7, §4.6).
+26. **MUST NOT run full-corpus processing before the same path has passed on the fixture and then a small sample** — the §0.3.6 data ladder is mandatory rungs, not guidance; cost-motivated *sampling of answers* remains separately forbidden (item 12) (Amendment §10.4-8, §10.6).
+27. **MUST NOT auto-advance to the next ticket or slice without the current one's acceptance report** — tickets need their §0.3.3 DoD evidence and per-cycle outputs (§0.3.7, including the no-bare-«تم الإنجاز» rule); slices need demo + acceptance tests + gap record + **owner approval** (Amendment §10.4-10, §9.4; SD-18).
 
 ## 14. Cross-index — where to look things up
 
@@ -746,4 +817,4 @@ Structural prohibitions. Each cites its authority; several are also mechanically
 
 The package's single deepest lesson from the legacy system: **discipline that lives in people decays; discipline that lives in structure survives**. Every invariant above has a structural home — a constraint, an import ban, a gate, a ratchet. When you find yourself about to rely on carefulness instead of structure, stop and add the structure first. When a gate is red, the gate is right until proven otherwise — fix the code, never the ruler. And when something genuinely cannot be built as planned, say so loudly in a deviation note with an OD — the one unforgivable failure mode in this codebase is the silent workaround [FACT — the entire arch/08 issues register is a catalogue of silent workarounds].
 
-*End of document 23. Begin with EPIC-01.*
+*End of document 23. After the amended-package signature (doc 22 §5 item 21), begin with **VS-00 only** — its first tickets land EPIC-01's scope — and stop at its gate: demo → acceptance report → owner approval → VS-01 [DECISION SD-18, Amendment §15].*

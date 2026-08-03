@@ -1,6 +1,6 @@
 # 16 — Security, Privacy, and Compliance
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-03 (Owner Amendment integrated) · **Author:** Planning package (Fable 5)
 **Depends on:** 05 (data classes), 07 (deployment topology), 08 (PII boundary map, audit DDL), 12 (R15 isolation), 13 (Lane-3 surfaces), 14 (model roles) · **Feeds:** 17 (authz per endpoint), 18 (review/consent UX), 19 (security observability), 20 (snapshot handling), 21 (security work packages), 22 (ADR-0017, OD-04/08/09), 23
 **Sources used:** GREENFIELD §15 (full), §2.3–2.5, §21 EXP-10; MASTER_PROMPT §6 R14/R15/R16, I12-legacy; arch/05 §TL;DR + §1 (legacy auth disaster), arch/02 §Backup-table PII finding; CORE-BRIEF §6–§12; doc 05 §1.4; doc 08 §12.1, §15; doc 12 §11
 
@@ -198,6 +198,62 @@ def authorize(principal, permission, resource=None):
 1. *Analyst opens evidence at a turn:* `authorize(analyst, 'transcript.read', session)` → role has it → no scope rule → AUDITED ⇒ `evidence_accessed` row in the same transaction as the window read (§2.4). Response includes «هذا الاطلاع مسجل» banner flag.
 2. *Service owner asks CAP-D5 for a consultant outside their programme:* permission `aggregate.read_named` present, but `check_scope` fails → 403 `insufficient_scope` with the closed reason surfaced through Lane 2 as `OUT_OF_SCOPE` in chat context — never a silent narrowing of the answer (I5: the system refuses; it does not answer a smaller question unannounced).
 3. *Executive viewer clicks a quote citation:* `transcript.read` absent → 403; UI (doc 18) renders the pseudonymized quote from the envelope with «عرض النص الكامل يتطلب صلاحية الاطلاع على المحاضر» — the aggregate stays useful, the split stays intact (ADR-0017).
+
+### 2.6 Operational-product surfaces — permissions, matrix extension, anti-surveillance rules (Owner Amendment 2026-08-03)
+
+The Owner Amendment adds operational surfaces [DECISION owner 2026-08-03 / Amendment §12-16]: the data ops centre (SCR-14 «مركز تشغيل البيانات»), Session 360 (SCR-15), the upgraded «اشتباه مخالفة» queue (SCR-08) with missed-violation reporting (SCR-17), the detector learning screens (SCR-18), the Action Center (SCR-19 «مركز الإجراءات»), the monthly infographic (SCR-20 «نبض خدمة الاستشارات والإرشاد — ملخص الشهر»), the morning digest (SCR-21 «صباحيات الخدمة»), and governed watchlists (Amendment §11.7). Contracts in doc 17 §13A; screens in doc 18. The §2.5 closed permission vocabulary extends with (additions remain deliberately heavy — this doc + doc 17 + the matrix test):
+
+```text
+ops.runs_read              session360.read            violations.queue_read      violations.report_missed
+detector.learning_read     detector.promote           infographic.read_published infographic.read_draft
+infographic.approve        infographic.publish        actions.read               actions.manage
+actions.close              digest.subscribe           watchlist.manage
+```
+
+Matrix extension (legend as §2.3; all rows also mirrored by Postgres grants/masked views per §2.4):
+
+| Resource / action | exec_viewer | analyst | service_owner | reviewer | steward | admin | pipeline_service |
+|---|---|---|---|---|---|---|---|
+| Ops centre: pipeline runs, watermarks, run manifests (SCR-14; `ops.runs_read` + `dq.read`) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | ✖ |
+| Pipeline mutations: `rerun failed items` / `reprocess selected sessions` (`sources.admin`, step-up) | ✖ | ✖ | ✖ | ✖ | ✔ᴬ | ✔ᴬ | ✖ |
+| Session 360 structured panes (SCR-15; `session360.read`) | ✖ | ✔ | △ own programme/service scope | ✔ | ✔ | ✔ | ✖ |
+| «اشتباه مخالفة» queue + case detail (SCR-08; `violations.queue_read`) | ✖ | ✖ | ✖ | ✔ᴬ | ✔ᴬ | ✔ᴬ | ✖ |
+| Violation review decisions — six-decision events (`review.decide`) | ✖ | ✖ | ✖ | ✔ᴬ | ✔ᴬ | ✔ᴬ | ✖ |
+| «إضافة اشتباه لم يرصده النظام» (SCR-17; `violations.report_missed`) | ✖ | ✖ | ✖ | ✔ᴬ | ✔ᴬ | ✔ᴬ | ✖ |
+| Detector learning screens (SCR-18; `detector.learning_read`) | ✖ | ✖ | ✖ | △ review lead only | ✔ | ✔ | ✖ |
+| Detector promotion decision (`detector.promote`, step-up) | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ᴬ | ✖ |
+| Infographic — published general edition (SCR-20; `infographic.read_published`) | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ |
+| Infographic drafts (`infographic.read_draft`) | ✖ | ✖ | ✔ | ✖ | ✔ | ✔ | ✖ |
+| Infographic approve — data_review (steward, as Data Owner delegate) / content_review (service owner) (`infographic.approve`) | ✖ | ✖ | ✔ᴬ | ✖ | ✔ᴬ | ✔ᴬ | ✖ |
+| Infographic publish (`infographic.publish` — Publication Authority per OD-10/OD-29; step-up) | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ᴬ | ✖ |
+| Action Center read (SCR-19; `actions.read`) | △ aggregate status/impact only [ASSUME OD-34] | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ |
+| Action create/assign/update (`actions.manage`) | ✖ | ✖ | ✔ᴬ | ✖ | ✖ | ✔ᴬ | ✖ |
+| Action close (`actions.close` — closure authority [ASSUME OD-34]) | ✖ | ✖ | ✔ᴬ | ✖ | ✖ | ✔ᴬ | ✖ |
+| Morning digest subscription (SCR-21; `digest.subscribe`) | △ publication notices only | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ |
+| Watchlists (`watchlist.manage` — owner + reason + expiry mandatory) | ✖ | ✖ | ✔ᴬ own scope | ✖ | ✔ᴬ | ✔ᴬ | ✖ |
+
+Notes: the Session 360 **transcript pane** additionally requires `transcript.read` — the ADR-0017 aggregate-vs-transcript split holds inside the composite screen, so `service_owner` sees the structured panes only [ASSUME OD-14]. "Review lead" and "AI/model owner" are personas (doc 03, Amendment §12-03), not new RBAC roles: at launch they bind as IdP-group grants of `detector.learning_read` (+ adjudication assignment) on `reviewer`, and of `detector.promote`/`models.admin` on `admin`, respectively [REC — new roles only if the owner staffs them separately; register under OD-30 staffing]. Every surface ships behind its feature flag (doc 07 §4.3); a disabled flag hides the surface entirely.
+
+**Binding rules:**
+
+1. **Suspected ≠ approved, everywhere** [DECISION SD-19/SD-20]. No surface reachable by `executive_viewer` renders a suspected case as a violation; leadership numbers (infographic part 4, dashboards, packs) use human-approved violations only; the suspicion queue size may appear as its own clearly-labelled figure (`suspected_cases_open`), never merged with approved counts. Every queue/case response carries the fixed disclaimer: «الحالات في هذه الصفحة مؤشرات آلية تحتاج مراجعة بشرية، ولا تعد مخالفة مثبتة قبل اعتمادها.»
+2. **Consultant-name masking in the general infographic edition by default** [ASSUME OD-31]. The published general edition contains no consultant names and no accusatory detail (Amendment §7.4); named/coaching surfaces are visible only under the direct-manager rules of OD-09/OD-14, and the §4.2 re-expansion mechanics apply unchanged (names re-expand only for permitted roles, after gates).
+3. **Anti-surveillance rule** [DECISION owner 2026-08-03 / Amendment §12-16 + §11.7]. Violation-queue access requires BOTH a role holding `violations.queue_read` AND a registered purpose: reviewers reach cases through their `review_assignment` (doc 08); steward/admin access is always audited and volume-anomaly-alerted (§8.3). The queue is never a browsing surface: suspected-case lists are not exportable (aggregate counts only), and no watchlist may target violation activity of a consultant outside the owner's management scope. **Watchlists are governed:** every watchlist carries an owner, a documented reason, and an expiry (`expires_at` mandatory); expiry disables it automatically; renewal re-states the reason; the quarterly access review (doc 19 §11) covers active watchlists. Open-ended, reasonless monitoring is unrepresentable.
+4. **No reviewer click ever changes production detection directly** [DECISION SD-22] — stated here as a security control, not only an ML-process rule. Review decisions write append-only `review_event` rows and nothing else: nothing on the review path can mutate detector configuration, thresholds, prompts, or model bindings. Detector behaviour changes only through the doc 14 §6.5 release lifecycle (versioned immutable dataset → candidate → offline per-category eval → shadow → human adjudication → documented promotion → canary → deploy with version stamp → monitoring → instant rollback), each step audited. Consultant names/ratings are never detector features. Control test: G-SEC-11.
+5. **Notification and export policies** [DECISION owner 2026-08-03 / Amendment §12-16]. Outbound notifications (digest, publication notices, alerts) carry counts and login-gated deep links only; the only content that may be embedded or attached is a **published** artifact in its general (masked) edition [ASSUME OD-29 channels: Portal + approved email; OD-31 masking]. Draft infographics, suspected-case details, and named-consultant material never leave the platform by notification or export. Exports of the new surfaces derive from approved/published artifacts only; file downloads remain short-lived signed URLs (§7, ≤15 min); every delivery is recorded in `notification_delivery` (doc 08) and audited. Control test: G-SEC-12.
+
+**Audit catalogue additions** (extend §8.2; same discipline — `details` P1-max, content referenced by id, never embedded):
+
+| `action` | When | `details` schema (jsonb) |
+|---|---|---|
+| `pipeline_run_completed` | a run reaches a terminal state (`succeeded/partial/failed/cancelled/superseded`) | `{run_id, run_kind, state, counters, manifest_uri}` |
+| `violation_case_event` | every six-decision `review_event` append | `{case_uid, decision, reason_code, seq, basis_fingerprint}` |
+| `missed_violation_reported` | SCR-17 submission | `{session_uid, category_id or new_type_proposal, report_id}` |
+| `detector_release_changed` | shadow/canary/promote/rollback transition | `{release_id, from, to, label_dataset_version, approved_by}` |
+| `infographic_state_changed` | any lifecycle transition incl. publish/retract | `{infographic_uid, period, from, to, completeness, override?}` |
+| `action_event` | action created/assigned/status change/closed | `{action_uid, event, owner, due_date?}` |
+| `notification_sent` | any digest/notice delivery attempt | `{subscription_id, channel, artifact_ref, outcome}` — message content never stored |
+| `watchlist_changed` | create/renew/expire | `{watchlist_id, owner, reason_ar, expires_at}` |
 
 ---
 
@@ -634,6 +690,8 @@ Each SEV-1 class has a rehearsed drill (annually, staged): outbound-gate bypass 
 | G-SEC-8 | R15.4 outbound fixtures: zero roster-name/P3 patterns in serialized payloads | §4.5 |
 | G-SEC-9 | Audit completeness fixtures: ✔ᴬ actions produce audit rows; audit-write failure aborts the action | §8, D-16 |
 | G-SEC-10 | Secret scan (gitleaks) clean; no placeholder-default secrets accepted at boot | §6.3 |
+| G-SEC-11 | SD-22 control: fixtures exercise each of the six violation review decisions and assert zero mutation of detector/prompt/model registries, thresholds, or any detection configuration — review writes `review_event` rows only | §2.6-4 |
+| G-SEC-12 | Notification payload fixtures: serialized outbound notifications contain no P2/P3, no suspected-case detail, no draft-artifact content; links are login-gated deep links or ≤15-min signed URLs; every delivery writes its `notification_sent` audit row | §2.6-5 |
 
 ---
 
@@ -653,5 +711,9 @@ Each SEV-1 class has a rehearsed drill (annually, staged): outbound-gate bypass 
 | OD-14 | Consultant national-id retention + role-split widenings | retain restricted column, hash elsewhere; no service_owner evidence access | §2.3, §3.2 |
 | **OD-16 (new)** | Formal PDPL/NCA-ECC verification with compliance office (registration, transfer approval, breach chain, SIEM mandate, hosting classification) | proceed per §9 controls; production transcript outbound blocked until sign-off | could narrow OD-04, mandate SIEM shipping, or constrain OD-01 |
 | **OD-19 (new)** | Groq contractual data terms (DPA: no-training, retention, Batch artifact deletion, ZDR availability by tier) | treat as unverified; pseudonymization mandatory regardless | could relax/tighten matrix cells; interacts with OD-03 tier |
+| OD-29 | Infographic publication channels | Portal + approved email; Teams/other later | §2.6-5 notification policy; publish flow doc 17 §13A.7 |
+| OD-30 | Review SLA + reviewer staffing/assignment (incl. review-lead binding) | 7d normal / 2d high-priority; assignment by review lead | §2.6 matrix (review-lead grants); doc 19 §2.8 `review_backlog_age` alerts |
+| OD-31 | Consultant-name visibility scope in infographic/coaching surfaces | masked in the general edition; visible only to direct-manager RBAC per OD-09/OD-14 | §2.6-2 masking rule; §4.2 re-expansion policy |
+| OD-34 | Action Center ownership + closure authority | service owner owns actions; leadership sees aggregate status/impact | §2.6 matrix `actions.*` rows |
 
 **Revisit triggers:** Groq KSA-region/sovereign offering (re-run §4 matrix); IdP mandate change (national SSO profile); multi-node scale-out (mTLS, D-08 → K8s policies); any SEV-1 (full re-review of the touched control); ECC revision update from NCA (§9.2 remap); OD-15 beneficiary-identity linkage approval (new P3 surface ⇒ new matrix row + DPIA-style review).

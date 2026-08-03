@@ -1,16 +1,16 @@
 # 22 — Architecture Decisions and Open Decisions
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 04–20 (every document cites ADR/OD IDs owned here), 21 (needed-by phases) · **Feeds:** 00 (approval table), 01 (leadership decisions), 23 (handoff guardrails)
-**Sources used:** GREENFIELD §22, §24, §7, §2.5; MASTER_PROMPT §2.4, §4.4, §5.3, E.15; CORE-BRIEF §7–§12; docs 05 §2.7, 07 §TD, 08 §15, 13 §9.6, 14 §roles, 15 §10, 16 §4/§9, 18 §format
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-04 (Owner Amendment 2026-08-03 integration — ADR-0021…ADR-0024, OD-28…OD-35, OD-07 extension) · **Author:** Planning package (Fable 5)
+**Depends on:** 04–20 (every document cites ADR/OD IDs owned here), 21 (needed-by phases + §0.5 VS overlay) · **Feeds:** 00 (approval table), 01 (leadership decisions), 23 (handoff guardrails), 24 (backlog waves cite ODs), 25 (per-VS gates cite ADRs/ODs)
+**Sources used:** GREENFIELD §22, §24, §7, §2.5; MASTER_PROMPT §2.4, §4.4, §5.3, E.15; CORE-BRIEF §7–§12; docs 05 §2.7, 07 §TD, 08 §15, 13 §9.6, 14 §roles, 15 §10, 16 §4/§9, 18 §format; Owner Amendment 2026-08-03 §§3, 5, 6, 7, 9, 10, 12, 13 (SD-18…SD-22 — doc 02 register)
 
-This document is the **single registry** for architecture decision records (ADR-0001…ADR-0020) and open decisions (OD-01…OD-25). Every other document cites these IDs; where another document's local usage collided on an ID during parallel authoring, §3.1 resolves the collision authoritatively.
+This document is the **single registry** for architecture decision records (ADR-0001…ADR-0024) and open decisions (OD-01…OD-35). Every other document cites these IDs; where another document's local usage collided on an ID during parallel authoring, §3.1 resolves the collision authoritatively.
 
 ---
 
 ## 1. ADR register — index and status
 
-All twenty ADRs carry status **recommended-for-acceptance**: they are planning recommendations awaiting the owner's en-bloc or itemized acceptance at the implementation start gate (00-INDEX). None is "accepted" yet — that word is reserved for the owner's signature [DECISION GREENFIELD §24 claim discipline].
+All twenty-four ADRs carry status **recommended-for-acceptance**: they are planning recommendations awaiting the owner's en-bloc or itemized acceptance at the implementation start gate (00-INDEX). None is "accepted" yet — that word is reserved for the owner's signature [DECISION GREENFIELD §24 claim discipline]. ADR-0021…ADR-0024 were minted in the amendment integration pass of 2026-08-04 to carry the Owner Amendment of 2026-08-03 (SD-18…SD-22 — doc 02 register); they amend framings, supersede no prior ADR, and weaken no invariant or gate.
 
 | ADR | Title | Argued in | Invariants served |
 |---|---|---|---|
@@ -34,6 +34,10 @@ All twenty ADRs carry status **recommended-for-acceptance**: they are planning r
 | 0018 | React+TS RTL frontend; self-hosted assets; structured-answer rendering | 07, 18 | I11 |
 | 0019 | Observability stack; reconstructable requests | 19 | I16 |
 | 0020 | Correctness-over-cost doctrine with measured spend | 14, 21 | (GREENFIELD §2.5) |
+| 0021 | Vertical-slice incremental delivery: owner previews + mandatory stop gates | 21 §0.5, 23 §0.3, 25 | (SD-18; keeps every I-gate on L2/L3) |
+| 0022 | Governed detector-release lifecycle; no online self-learning | 14, 15, 10 | I13, I17, I18 |
+| 0023 | Monthly leadership infographic as a standalone governed product | 04, 08, 18 | I3, I11 |
+| 0024 | SRC-DATAHUB first-class source family + field-authority matrix | 05, 08, 09 | I8, I13 |
 
 ---
 
@@ -319,6 +323,63 @@ Every call logs model id, prompt sha, tokens, cost, latency (I17); a deprecation
 - Cost dashboards exist from P0 (Groq client telemetry) — the report is a query, not a project.
 **Revisit trigger.** Only the owner can revisit the doctrine (it is their decision); the measurement duty never lapses.
 
+### ADR-0021 — Vertical-slice incremental delivery with owner previews and mandatory stop gates
+**Status:** recommended-for-acceptance (minted 2026-08-04, amendment integration pass).
+**Context.** The owner reviewed the planning package and judged it «مقبولة معماريًا ولكنها غير جاهزة لبدء التطوير بصيغتها الحالية» — architecturally acceptable but too broad and too horizontal, deferring a coherent, testable product until after many foundations and capabilities are built [DECISION Owner Amendment 2026-08-03 §1.2]. The named risk: an agent works for days across many layers and files, and only at the end does it emerge that the user journey is incomplete, the review page fails the team, the Read.ai↔DataHub join is unfinished, or the leadership infographic lacks what decision-makers need. The owner issued SD-18 as a binding change request.
+**Decision.** Delivery is re-planned as vertical slices **VS-00…VS-12** (doc 21 §0.5): each slice is a small complete path from source to screen carrying only what it needs (migration, backend/domain, API, UI, fixture, automated tests, manual demo script, observability, rollback, documentation). After **every** slice a **mandatory stop**: the agent stops, demos, runs acceptance tests, records gaps, and obtains owner approval — the next slice never starts automatically [DECISION Amendment §9.4]. Exposure is graded L0/L1/L2/L3 (Amendment §9.2): **L1 owner previews happen from the earliest slices** on synthetic/governed-staging data; production gates (EXP-09/EXP-10 etc.) gate **L2/L3 only**, never L1 — and L1 success never authorizes L2/L3 (resolved conflict #1 vs the former "nothing user-facing before EXP-09/EXP-10" phrasing). Phases P0…P7 and every experiment gate remain the unchanged dependency/gate framework; EPIC-01…36 remain the ticket inventory, re-cut into ≤4–8h tickets (Amendment §10.1); the first executable order after amended-package approval is **VS-00 only** [DECISION Amendment §15]. This ADR **amends the delivery framing** of docs 21/23 (and the execution reading of doc 20's parallel-run posture — parallel run is never a reason to block an L1 preview); it supersedes no prior ADR — ADR-0001…0020 stand unchanged.
+**Alternatives considered.**
+- *Pure horizontal build* (the pre-amendment execution reading: all schemas → all pipelines → all capabilities → all screens → first trial) — **rejected per the owner's risk of late discovery**: defects in journeys, joins, and decision-fit surface only after the largest possible sunk cost, exactly the failure mode §1.2 names.
+- *Big-bang after all gates* (build everything, show everything once EXP-09/EXP-10 pass) — rejected: it starves the owner of preview-driven correction and makes gate failures maximally expensive.
+- *Slices without mandatory stops* (continuous flow, review on request) — rejected: an agent that self-advances re-creates the horizontal risk one slice at a time; the stop is the control.
+**Consequences.**
+- Doc 21 gains the §0.5 overlay; doc 23 gains the §0.3 execution protocol + MUST-NOT items 22–27; doc 25 owns the per-slice demo scripts, acceptance checklists, and the agent state file; doc 24 owns waves Wave A/B/C.
+- Owner time becomes a scheduled per-slice duty (preview + approval) — smaller and earlier than the pre-amendment review lumps.
+- Some machinery is deliberately built twice-thin (e.g. VS-05's minimal pack-render path before P6's full pack factory) — accepted as the price of early truth; the owning phase's gates still bind its L2/L3 exposure.
+**Revisit trigger.** The owner may re-sequence, merge, or split slices at any stop gate; the stop rule itself and the L2/L3 gate binding are not revisitable below owner level.
+
+### ADR-0022 — Governed detector-release lifecycle; no online self-learning; consultant identity never a feature
+**Status:** recommended-for-acceptance (minted 2026-08-04, amendment integration pass).
+**Context.** The detector must improve from reviewer decisions [DECISION SD-22, Amendment §6], but direct online learning — production behaviour changing on a reviewer's click — would be unexplainable, unrollbackable, and would amplify individual reviewer bias [FACT Amendment §6.1]. Reviewing only flagged cases measures precision and never true recall [FACT Amendment §1.3-5].
+**Decision.** Detector improvement runs as a **governed release lifecycle**: review labels + missed-case reports («إضافة اشتباه لم يرصده النظام») + weekly stratified random negatives (EXP-11) → **versioned immutable datasets** (train/validation/holdout, no session leakage) → candidate (prompt/model/rules/threshold/taxonomy — the delta named) → **offline evaluation per category (precision AND estimated recall**, with CIs — never one aggregate number) → regression check on stable categories → **shadow run** (no effect on the production queue) → **human adjudication** of current-vs-candidate differences → **documented promotion decision** → **canary** (bounded share or one programme) → full deploy **with version stamp** → monitoring (acceptance rate, drift, volume) → **instant rollback** to the prior version with zero loss of review decisions. **No reviewer click ever changes production behaviour directly.** Holdout cases never train. Disagreements resolve by adjudicator, not vote-counting alone. **Consultant names/ratings are never detector features**, and beneficiary rating alone never implies a violation (context, not evidence) [DECISION Amendment §6.7]. Every release stamps dataset version, prompt SHA, model ID, thresholds, taxonomy version (I13/I17).
+**Alternatives considered.**
+- *Online/continual learning from reviewer actions* — rejected outright: violates I18's spirit (behaviour changes without a deterministic, auditable gate), destroys reproducibility of past findings, and turns reviewer bias into silent model drift.
+- *No learning loop* (static detector, manual prompt edits ad hoc) — rejected: the owner names the missing loop as a blocking gap [FACT Amendment §1.3-4]; ad-hoc edits without datasets/shadow are the legacy failure in new clothes.
+- *Vote-threshold auto-promotion* (promote when reviewer acceptance crosses N%) — rejected: promotion is a documented human decision on offline+shadow evidence, never a counter.
+**Consequences.**
+- Migration 0014 carries the learning entities (`label_dataset`, `label_dataset_item`, `detector_candidate`, `detector_release`, `shadow_result`, `missed_violation_report` — doc 08 owns final DDL); SCR-18 exposes the loop; VS-04 proves it end-to-end on VS-02's decisions.
+- New ops metrics become first-class: `detector_acceptance_rate`, estimated per-category recall (EXP-11), reclassification and disagreement rates (doc 11 registry).
+- Release cadence is owner-tunable via OD-33 (assumed monthly or on gate-pass, whichever is less frequent); sampling size/cadence via OD-32.
+**Revisit trigger.** EXP-11 results re-size the sampling programme; a category whose precision AND recall stay ≥ target for 6 months may move to a lighter regression-only cadence — by documented decision, never by default.
+
+### ADR-0023 — Monthly leadership infographic as a standalone governed product (tri-format byte-parity, approved-violations-only)
+**Status:** recommended-for-acceptance (minted 2026-08-04, amendment integration pass).
+**Context.** The package had official monthly/quarterly packs (CAP-D10) but no named, standalone one-page leadership product; the owner requires one as an early deliverable [DECISION SD-19, Amendment §7]: «نبض خدمة الاستشارات والإرشاد — ملخص الشهر» (CAP-OPS-08, PB-014, VS-05).
+**Decision.** The monthly infographic is a **product, not a renderer feature**: one fixed template (variants later, by approval), generated after month-close + nightly consolidation when completeness ≥ 98% or the second morning of the new month — whichever comes later — with any completeness override printed on its face [DECISION Amendment §7.3]. Lifecycle `draft → data_review → content_review → approved → published → superseded/retracted` with role-separated approvals (data owner → service owner → publication authority); reissue creates a new version, never edits a published one (ADR-0011 doctrine). **Three formats — in-platform web page, one-page PDF, high-resolution PNG — carry byte-identical payloads** rendered from one immutable pack artifact (I11; no DOM scraping); a stable link points to the published version. **All numbers come programmatically from structured data** (metric results with provenance); **no LLM computes or invents a number, and no image-generation model draws anything** — an optional LLM phrasing pass for short sentences must pass the R6 numeric-provenance gate (I3). **Leadership violation figures count human-approved violations only**; suspected cases appear, if at all, as a separate queue-size figure; **no consultant names in the general edition** [DECISION SD-19; OD-31]. Mandatory footer: period, last update, sessions used/matched/total, key exclusions, taxonomy versions, corpus snapshot, drill-down link (I8).
+**Alternatives considered.**
+- *Keep it a sub-renderer inside CAP-D10 packs* (the pre-amendment framing) — rejected: the owner requires a standalone early product with its own acceptance criteria, approval chain, and channels; burying it in the pack machinery defers it to P6 and dilutes accountability.
+- *Image-generation model for layout/figures* — rejected outright [DECISION Amendment §7.2]: numbers and charts must be programmatic and reproducible from the artifact.
+- *Free-form template system in v1* — rejected: template stability is what makes month-over-month comparison and approval tractable [DECISION Amendment §7.6].
+**Consequences.**
+- Migration 0015 carries `monthly_infographic`, `infographic_section`, `publication_event` (or their pack-artifact linkage — doc 08 owns final DDL); SCR-20 is the draft/approve/publish surface; acceptance criteria live in Amendment §7.7 → doc 25 §VS-05.
+- VS-05 pulls a minimal pack-render path forward from P6 under L1 only; CAP-D10's full pack machinery and its gates are unchanged for L2/L3.
+- Publication channels are OD-29 (assume Portal + approved email); name-visibility scope is OD-31; the publication-authority delegation extends OD-10.
+- The tri-format byte-parity test becomes a standing suite item (doc 15: web/PDF/PNG payload equality; regenerate-from-artifact proof).
+**Revisit trigger.** After three published editions, the owner reviews template variants (leadership/ops/programme/quarterly — Amendment §7.6); any change to the approved-violations-only rule is owner-level and touches doc 16.
+
+### ADR-0024 — SRC-DATAHUB as a first-class source family with a field-authority matrix; Excel as temporary fallback only
+**Status:** recommended-for-acceptance (minted 2026-08-04, amendment integration pass).
+**Context.** The internal record was modelled as five generic sources (SRC-INT/SRC-EVAL/SRC-OUT/SRC-DIR/SRC-REF) without an institutional identity, explicit sub-contracts, or a source-of-truth matrix; the owner names this a blocking gap [DECISION Amendment §1.3-2, §3].
+**Decision.** Register **`SRC-DATAHUB` — Monsha'at Internal Advisory DataHub** as a first-class source *family* (doc 05) with independent sub-contracts: `SRC-DATAHUB-SESSION`, `SRC-DATAHUB-BENEFICIARY-EVAL`, `SRC-DATAHUB-CONSULTANT-EVAL`, `SRC-DATAHUB-OUTCOME`, `SRC-DATAHUB-DIRECTORY`, `SRC-DATAHUB-REFERENCE`. The existing SRC-INT/SRC-EVAL/SRC-OUT/SRC-DIR/SRC-REF are **restructured as views of this family — an explicit supersession, not a parallel framing** (doc 05 states it; adapters and run ledgers keep working). A **field-authority matrix** governs conflicts (Amendment §3.2): DataHub rules session status/schedule/programme and institutional consultant identity (divergence → DQ issue); the active transcript provider rules text/speakers/timings; audio presence and DataHub attendance are never conflated; beneficiary and consultant evaluations come only from DataHub (never inferred from text in their place); violations/challenges/indicators and review states are the new platform's derived findings with provenance and append-only review events. Each sub-feed pulls with its own watermark and `source_record_version`/`observed_at` stamps; late-arriving data updates Session 360 without full rebuilds; **one failed sub-feed makes the run `partial`, never a total failure and never a silent success** [DECISION Amendment §3.3]. Access mechanism/freshness stays under **OD-07** (assumed institutional daily batch/API); **Excel upload is a temporary fallback only, never the target mechanism** [DECISION Amendment §12-05].
+**Alternatives considered.**
+- *Keep five generic sources* — rejected: no institutional contract to negotiate against, no authority matrix, and cross-source contradictions land ad hoc in code instead of in a governed matrix.
+- *Direct DB replica of DataHub* — deferred, not chosen: OD-07 owns the mechanism; the contract set above is mechanism-agnostic (API/batch/replica all land behind the same sub-contracts).
+- *Excel as a standing mechanism* — rejected: positional/manual ingestion is a named legacy defect class; fallback status only, clearly labelled in doc 05.
+**Consequences.**
+- Doc 05 gains the family + matrix + late-arrival/CDC/watermark/SLA clauses; doc 08's crosswalk (`advisory_session_id` + per-source ID crosswalk) is unchanged in principle and confirmed as the join spine; doc 09's nightly run pulls each sub-feed as its own step.
+- Daily join-rate measurement becomes a product surface (`source_join_rate`, `data_completeness` in the doc 11 registry; SCR-14 shows them; «مشكلات الربط والبيانات» queue for the steward).
+- EXP-01 semantics extend naturally: provider↔DataHub match rates per cohort, unmatched and conflicting sessions quantified separately.
+**Revisit trigger.** OD-07 closing on a concrete mechanism re-parameterizes adapters (bounded — header-mapped ingestion isolates it); a second institutional source family would reuse this pattern, not fork it.
+
 ---
 
 ## 3. Open Decision register
@@ -383,12 +444,12 @@ Fields per entry: question · decision owner (role at Monsha'at) · safe working
 - *If wrong (no candidate ever passes):* the quote-fidelity ceiling measured in EXP-02 persists and is declared on quote-bearing capabilities; STT contingency only if OD-12 flips.
 - *Needed by:* P6 (rebase execution slot); the benchmark needs OD-25 at P1.
 
-**OD-07 — Internal session data access mechanism.**
-- *Question:* DB replica, API, or export for SRC-INT/DIR/REF/EVAL/OUT — and what freshness SLA?
+**OD-07 — Internal data access mechanism (the SRC-DATAHUB umbrella).** *(Extended 2026-08-04 — Owner Amendment §3; ADR-0024. OD-07 remains the single umbrella decision for DataHub access: no separate OD is minted for the sub-feeds.)*
+- *Question:* DB replica, API, or export for the internal record — now formalized as the **`SRC-DATAHUB` family** with independent sub-feed contracts **SRC-DATAHUB-SESSION / -BENEFICIARY-EVAL / -CONSULTANT-EVAL / -OUTCOME / -DIRECTORY / -REFERENCE** (the former SRC-INT/DIR/REF/EVAL/OUT restructured as views of this family, doc 05) — and what freshness SLA per sub-feed?
 - *Owner:* Internal-systems owner + data steward.
-- *Assumption:* read-only API or scheduled export; daily freshness for sessions, weekly for directory/reference [ASSUME OD-07].
-- *If wrong:* adapter rework (bounded — header-mapped ingestion isolates it); worse freshness degrades CAP-C3/D-family recency, declared via I8 stamps rather than hidden.
-- *Needed by:* P1 (adapters). Request filed P0.
+- *Assumption:* institutional **daily batch/API per sub-contract** [DECISION Amendment §13], each with its own watermark and `source_record_version`/`observed_at` stamps, independent failure semantics (one failed sub-feed ⇒ run `partial`, never total failure, never silent success — ADR-0024); daily freshness for sessions/evaluations/outcomes, weekly for directory/reference; **Excel upload is a temporary fallback only, never the target mechanism** [ASSUME OD-07].
+- *If wrong:* adapter rework (bounded — header-mapped ingestion isolates it); worse freshness degrades CAP-C3/D-family recency, declared via I8 stamps rather than hidden; a replica mandate moves parsing into contract-equivalent SQL views behind the same sub-contracts.
+- *Needed by:* P1 (adapters) — first sub-feeds at VS-01, full family at VS-03. Request filed P0.
 
 **OD-08 — Retention windows.**
 - *Question:* Retention for raw payloads, superseded transcript sources, conversation logs, exports, audit events?
@@ -532,6 +593,65 @@ Fields per entry: question · decision owner (role at Monsha'at) · safe working
 - *Assumption:* banner-redirect at G4+60d, network restriction at G4+120d; the legacy system keeps running for its non-analytical functions indefinitely [ASSUME OD-27 — doc 20 §4-G5/§7].
 - *Impact if wrong:* G5 gate definition, doc 20 risk R8 (legacy stays load-bearing), doc 21 P7 deliverables, doc 22 §5 item 19.
 - *Needed by:* P7 (containment gate G5).
+
+*(OD-28…OD-35 minted 2026-08-04 in the amendment integration pass — Owner Amendment 2026-08-03 §12/§13; SD-18…SD-22. Planning never stalls on them: each carries its safe working assumption.)*
+
+**OD-28 — Nightly-run start time + completion SLA.**
+- *Question:* When does the Nightly Consolidation Run start, and by when must it complete (the morning-digest and dashboard-freshness SLA)?
+- *Owner:* Service owner + operations lead.
+- *Assumption:* starts 02:00 Asia/Riyadh daily, configurable; hourly Read.ai incremental pulls allowed where the source permits, but **the nightly run is the authoritative consolidation** [DECISION Amendment §4.1; ASSUME OD-28].
+- *If wrong:* scheduler configuration, digest timing, and doc 19 SLO alert thresholds shift; no structural change (start time is config by design).
+- *Needed by:* VS-03 (first nightly run); doc 19 SLOs.
+
+**OD-29 — Infographic publication channels.**
+- *Question:* Which internal channels carry the published monthly infographic?
+- *Owner:* Product owner + leadership (channel approval).
+- *Assumption:* Portal notification + approved internal email at launch; Teams or other internal channels later, after explicit approval [DECISION Amendment §7.2; ASSUME OD-29].
+- *If wrong:* notification-delivery adapters change (migration 0015's `notification_*` entities absorb new channels); the approval lifecycle and byte-parity rules (ADR-0023) are channel-independent.
+- *Needed by:* VS-05 (publish step).
+
+**OD-30 — Review SLA + reviewer staffing/assignment.**
+- *Question:* SLA per review-case priority, who staffs the review pool, and how cases are assigned.
+- *Owner:* Review lead + service owner.
+- *Assumption:* 7 days normal / 2 days high-priority; assignment by the review lead (review_assignment rows, no self-assignment of sensitive categories) [DECISION Amendment §13; ASSUME OD-30].
+- *If wrong:* SLA fields and the `review_backlog_age` alert thresholds re-parameterize; queue mechanics unchanged.
+- *Needed by:* VS-02 (queue SLA filters live).
+
+**OD-31 — Consultant-name visibility scope (infographic + coaching surfaces).**
+- *Question:* Do consultant names appear anywhere in the infographic or coaching/consultant-360 surfaces, and to whom?
+- *Owner:* Data steward + service owner (within the OD-09/OD-14 policy frame).
+- *Assumption:* masked in the general leadership edition — **no consultant names in the general edition** [DECISION SD-19]; visible only to direct-manager-scoped RBAC per the OD-09/OD-14 rules [ASSUME OD-31].
+- *If wrong (wider visibility approved):* new data-flow matrix row + DPIA-style review (doc 16) before any widening — I15 forbids silent widening either way.
+- *Needed by:* VS-05 (general edition), VS-08 (consultant-360/coaching surfaces).
+
+**OD-32 — False-negative sample size + cadence.**
+- *Question:* Weekly sample size, strata weights, and cadence for the unflagged-session review programme.
+- *Owner:* AI/model owner + QE; review lead for the load commitment.
+- *Assumption:* weekly stratified sample of unflagged sessions; **size and final strata set by EXP-11**, not guessed here [DECISION Amendment §6.4; ASSUME OD-32].
+- *If wrong (load unsustainable):* EXP-11's fallback — biweekly cadence, pooled strata with declared pooling; recall estimates always carry their design on their face.
+- *Needed by:* VS-04 (EXP-11 design approval).
+
+**OD-33 — Detector release cadence.**
+- *Question:* How often may a new detector release ship?
+- *Owner:* AI/model owner (promotion authority per ADR-0022).
+- *Assumption:* **monthly or on gate-pass, whichever is LESS frequent** [DECISION Amendment §13; ASSUME OD-33] — cadence never overrides the lifecycle's gates.
+- *If wrong:* a faster cadence still runs the full ADR-0022 ladder (dataset → offline → shadow → adjudication → promotion → canary); a slower one just widens the window.
+- *Needed by:* VS-04 (first promotion decision).
+
+**OD-34 — Action Center ownership + closure authority.**
+- *Question:* Who owns improvement actions, who may close them, and what does leadership see?
+- *Owner:* Service owner + leadership (delegation decision).
+- *Assumption:* the **service owner owns actions and their closure**; leadership sees aggregate status and post-action impact, not per-action operational control [DECISION Amendment §13; ASSUME OD-34].
+- *If wrong:* RBAC rows on the actions API re-scope; the action lifecycle (owner/due/status/evidence/impact-baseline) is authority-agnostic.
+- *Needed by:* VS-06 (action lifecycle live).
+
+**OD-35 — First violation vertical type.**
+- *Question:* Which violation type is the first end-to-end vertical (detection → «اشتباه مخالفة» queue → decision → labels)?
+- *Owner:* Product owner.
+- *Assumption:* **VIOL-008 — التواصل خارج الإطار الرسمي** (clear definition, strong deterministic rules + LLM verifier, directly reviewable quotes) [DECISION Amendment §5.6; ASSUME OD-35]. The owner may swap the type any time **before the VS-02 build starts**; after VS-02, further types are added one at a time, never eight at once.
+- *If wrong (owner swaps):* the VS-02 slice re-targets — the finding/case/event machinery, queue, and APIs are type-agnostic by design; only the detector rules and the type-scoped precision check re-author.
+- *Needed by:* VS-02 (build start).
+
 ## 4. Explicit assumption log
 
 Every load-bearing `[ASSUME]` the package builds on, in one place. Entries carrying an OD ID resolve when that OD closes. Entries marked ✻ are design-level assumptions with deliberately **no** OD — the design absorbs either outcome; they are logged for honesty, not decision-chasing.
@@ -567,6 +687,14 @@ Every load-bearing `[ASSUME]` the package builds on, in one place. Entries carry
 | A-27 ✻ | Corpus stays within single-Postgres headroom through pilot (+1 order of magnitude); partitioning + replica path defined | — | 07, 08 |
 | A-28 ✻ | Groq strict-schema support on gpt-oss-120b/20b persists (verified 2026-08-02); registry + benchmark machinery is the hedge | — | 14 |
 | A-29 ✻ | The 8 VIOL seed categories remain the owner's wording; taxonomy versioning absorbs any future edit | — | 04, 10 |
+| A-30 | Nightly run 02:00 Asia/Riyadh (configurable); hourly incremental allowed; nightly is authoritative | OD-28 | 09, 19, 21 §0.5 (VS-03), 25 |
+| A-31 | Infographic channels: Portal + approved email only at launch | OD-29 | 04 (CAP-OPS-08), 16, 18 (SCR-20) |
+| A-32 | Review SLA 7d normal / 2d high-priority; assignment by review lead | OD-30 | 09, 18 (SCR-08), 19 (`review_backlog_age`) |
+| A-33 | Consultant names masked in the general infographic edition; direct-manager RBAC only | OD-31 | 04, 16, 18 |
+| A-34 | Weekly stratified unflagged sample; size/strata set by EXP-11 | OD-32 | 10, 14, 15 (EXP-11), 21 §4 |
+| A-35 | Detector releases monthly or on gate-pass, whichever is less frequent | OD-33 | 14 (ADR-0022), 19 |
+| A-36 | Service owner owns actions + closure; leadership sees aggregates | OD-34 | 04 (CAP-OPS-09), 17, 18 (SCR-19) |
+| A-37 | First violation vertical = VIOL-008; swappable before VS-02 build | OD-35 | 21 §0.5 (VS-02), 23 §0.3, 25 |
 
 **The five highest-risk assumptions** (feeds the GREENFIELD §25 closing statement): **A-04** (outbound approval — blocks the enrichment plane), **A-13** (OAuth client — blocks live ingestion), **A-24** (annotation capacity — sets every benchmark's clock), **A-16** (compliance sign-off — gates production), **A-07** (internal access — gates D-family freshness) [INFER — ranked by blast radius × external-dependency degree].
 
@@ -598,18 +726,20 @@ Approval classes: **G1** = blocks implementation start; **G2** = blocks a named 
 | 18 | BI exposure policy | OD-22 memo | G3 | post-pilot | Platform owner |
 | 19 | Legacy retirement date | doc 21 P7-E7 plan | G3 | post-cutover | Platform owner |
 | 20 | Deployment environment + IdP/secrets specifics | OD-01/OD-02 memo | G1 | P0 provisioning | IT + security directorate |
+| 21 | **Approve the amended planning package** — Owner Amendment 2026-08-03 integrated: SD-18 (vertical-slice delivery + stop gates), SD-19 (monthly infographic product), SD-20 (violation-suspicion product), SD-21 (backlog governance), SD-22 (governed detector learning); ADR-0021…ADR-0024; docs 24/25; the doc 21 §0.5 overlay + doc 23 §0.3 protocol | PLAN_CHANGELOG + amended docs 00–25 | G1 | **VS-00 start — all implementation** | Platform owner + product owner |
 
-**Implementation start gate** = items 1 + 20 signed, items 4–8 *filed* (not necessarily answered — the recorded safe assumptions carry P0–P1) [REC; restated in 00-INDEX].
+**Implementation start gate** = items 1 + 20 signed, items 4–8 *filed* (not necessarily answered — the recorded safe assumptions carry P0–P1) [REC; restated in 00-INDEX]. **Amended 2026-08-04 [DECISION SD-18]:** item 21 joins items 1 + 20 as a G1 precondition — **no product code before the amended package is approved** [DECISION Amendment §0]; the first executable order after that signature is **VS-00 only**, then stop → demo → acceptance report → owner approval → VS-01 (docs 23 §0.3, 25; Amendment §15).
 
 ---
 
 ## 6. Maintenance rules for this register
 
-1. **New ODs**: next free number (OD-28…), never reuse; every new `[ASSUME]` in any document must reference an OD here, or be logged in §4 as a ✻ design-level assumption with its absorbing design named.
+1. **New ODs**: next free number (**OD-36…**), never reuse; every new `[ASSUME]` in any document must reference an OD here, or be logged in §4 as a ✻ design-level assumption with its absorbing design named.
 2. **Closing an OD**: record decision, date, decider, and which documents' assumptions flip; closed ODs stay in the table marked **CLOSED** — history is append-only, matching ADR-0012's doctrine.
-3. **ADR changes**: an accepted ADR is amended only by a superseding ADR (`ADR-0021…`) that names what it replaces; no in-place edits after owner acceptance. Rejected ADRs are recorded with the rejection rationale, not deleted.
+3. **ADR changes**: an accepted ADR is amended only by a superseding ADR (`ADR-0025…` — 0021…0024 are now taken by the amendment pass) that names what it replaces; no in-place edits after owner acceptance. Rejected ADRs are recorded with the rejection rationale, not deleted.
 4. **Consistency-pass duty** (from §3.1): **executed 2026-08-03** — docs 07/16/17 "OD-14/BI" remapped to **OD-22**; doc 13 "OD-14" to **OD-23**; doc 15 "OD-19" to **OD-24**; verified by grep (the collision patterns survive only in this register's §3.1 history table and 00-INDEX's resolution log). A second pass on 2026-08-03 remapped the collisions the re-run reviewers found: doc 19 "OD-22" (on-call) → **OD-26**; doc 20 "OD-23" (containment) → **OD-27**.
-5. **Cadence**: the OD register is reviewed at every phase-exit gate (doc 21); any OD past its needed-by phase without a decision escalates to the platform owner with its safe assumption restated and its accumulating cost quantified.
+5. **Cadence**: the OD register is reviewed at every phase-exit gate (doc 21) **and at every vertical-slice stop gate (doc 21 §0.5.4)**; any OD past its needed-by phase/slice without a decision escalates to the platform owner with its safe assumption restated and its accumulating cost quantified.
+6. **Amendment integration pass (2026-08-04)**: the Owner Amendment of 2026-08-03 (SD-18…SD-22 — doc 02 owns the settled-decision register) minted **ADR-0021…ADR-0024** and **OD-28…OD-35**, and extended **OD-07** with the SRC-DATAHUB sub-feed contracts (no new OD was minted for DataHub access — OD-07 stays the umbrella). Next free IDs after the pass: **ADR-0025**, **OD-36**. As everywhere in this register, the additions are append-only; nothing pre-existing was renumbered or weakened.
 
 ---
 

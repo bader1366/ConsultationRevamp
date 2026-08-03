@@ -1,8 +1,9 @@
 # 04 — Capability Catalogue (The Product Contract)
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
 **Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 02, 03 · **Feeds:** 05, 08, 10, 11, 12, 13, 15, 17, 18, 21, 22
-**Sources used:** GREENFIELD §5 (all of A1..C8, D1..D10 + preamble field list), §6, §8.5–8.7, §12, §13, §14.6, §18, §23; MASTER_PROMPT §4 (incl. 8-type violation table, R-P1/2/3), §4.2–4.4, Appendix A, Appendix B, Appendix C, Appendix E; arch/ evidence via CORE-BRIEF §11–12
+**Depends on:** 02, 03 · **Feeds:** 05, 08, 10, 11, 12, 13, 15, 17, 18, 21, 22, 24, 25
+**Sources used:** GREENFIELD §5 (all of A1..C8, D1..D10 + preamble field list), §6, §8.5–8.7, §12, §13, §14.6, §18, §23; MASTER_PROMPT §4 (incl. 8-type violation table, R-P1/2/3), §4.2–4.4, Appendix A, Appendix B, Appendix C, Appendix E; arch/ evidence via CORE-BRIEF §11–12; OWNER AMENDMENT 2026-08-03 §2, §4–§9, §11–§13
+**Amended:** 2026-08-03 — Owner Amendment integrated: operational/product capabilities CAP-OPS-01…CAP-OPS-12 registered (§11); CAP-B4/CAP-B5 suspected-vs-approved split made explicit; SD-18…SD-22 cited; SD-21 build-order rule applied (§9.1, §11.5) [DECISION owner 2026-08-03]
 
 ---
 
@@ -17,6 +18,7 @@ This document **is the product contract**. Every committed analytical question f
 - §7 reconciles the **violation detection vocabulary with the reporting taxonomy** VIOL-001..008, with named coverage gaps.
 - §8 applies the **«قطاع» disambiguation** (three dimensions) to every capability that mentions sector.
 - §9 defines the **capability lifecycle** and the promotion path from Lane-3 question fingerprints.
+- §11 registers the **operational/product capabilities (CAP-OPS series)** added by the 2026-08-03 Owner Amendment — the platform is an operational product first, not only an analytical Q&A surface [DECISION owner 2026-08-03 / Amendment §2, §12 doc 04 item].
 
 Deep analytical method design lives in doc 10; each entry here carries a 3–6-line method summary and cites doc 10. Serving mechanics (routing, τ/δ enforcement, toolbelt) live in doc 12. Golden-suite mechanics live in doc 15. Table names follow the doc-08 canonical proposals inside the CORE-BRIEF §6 schemas; if doc 08 renames a table, the registry entry updates in the same change set — the capability IDs never change.
 

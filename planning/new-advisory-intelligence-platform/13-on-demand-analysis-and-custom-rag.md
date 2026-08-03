@@ -1,7 +1,7 @@
 # 13 — On-Demand Analysis Factory and Custom RAG
 
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02 · **Amended:** 2026-08-03 (Owner Amendment integrated) · **Author:** Planning package (Fable 5)
 **Depends on:** 04 (capability IDs), 07 (worker plane, Lane-3 engine placement), 08 (`jobs` + `evidence` DDL), 10 (clustering methodology §5, method rules), 11 (registry the promotion loop feeds), 12 (orchestrator-controlled tool split) · **Feeds:** 14 (Lane-3 model roles), 15 (EXP-08 job eval, retrieval eval), 16 (job/RAG access control), 17 (job API contracts), 18 (job UX), 19 (job observability/DR), 21 (build order), 22 (ADR-0015, OD-23), 23 (handoff)
 **Sources used:** GREENFIELD §2.5, §8.6 (Lane 3), §8.7 (decision tree), §13, §14.1–14.7, §23-13; MASTER_PROMPT §4.3 (`corpus_snapshot`), §5.3 (full Lane-3 doctrine), §6 (R1–R16), §7.1 (filter-first retrieval); arch/07 §3.2 (legacy RAG evidence); CORE-BRIEF §§4, 6, 7, 11, 12
 
@@ -24,6 +24,10 @@ The legacy system already tried "an LLM planner over a transcript-scanning engin
 | Ran on the request path, competing with the deterministic engine | Runs **off** the request path in the worker plane (doc 07 §4). Reachable only after Lane 0 and Lane 1 have both declined (§1) — never a silent fallback (I5). |
 | Sampled/capped opaquely | Coverage per partition is computed and declared (§5.4, §6.6): sessions read / matched / total, `dropped_unverifiable`, and any INCOMPLETE partition named on the face of the answer (R8, I16). |
 | Numbers came out of the model | Numbers come from counting map outputs in code (§6). The model classifies and quotes; it never counts (I3). |
+
+## 0.2 Delivery position — Lane 3 is a later slice (Owner Amendment 2026-08-03)
+
+[DECISION SD-18 / Amendment §9.3] Lane 3 is **VS-10** in the delivery order: it enters an implementation slice only after the operational core is proven — the «اشتباه مخالفة» review loop (VS-02), nightly consolidation + «مركز تشغيل البيانات» (VS-03), and the monthly infographic (VS-05) each demoed, acceptance-tested, and owner-approved — and after the bounded agent slice (VS-09). The whole factory ships behind `lane3_analysis_enabled` (exact flag name; default OFF). PB-205 (Lane-3 deep analysis) and PB-206 (custom RAG lifecycle) are Wave C backlog items requiring explicit owner consultation and approval before entering any slice [DECISION SD-21]. Nothing in this document's design changes; only its build position does. L1 owner previews of the job UX on synthetic fixtures may happen earlier — production gates guard L2/L3 exposure only, never L1 previews [DECISION SD-18].
 
 ---
 
@@ -654,7 +658,7 @@ fingerprint_family   = R-P2 cluster over slot_template embeddings (doc 10 §5)
 
 ### 8.4 Promotion — thresholds and workflow [REC — concrete numbers; GREENFIELD §14.6 requires them]
 
-`jobs.promotion_candidate` (doc 08 §9.2) is maintained by a nightly worker sweep. A candidate moves `watching → proposed` (entering the ADR-0012 propose→review→approve queue) when **all** of:
+`jobs.promotion_candidate` (doc 08 §9.2) is maintained by a nightly worker sweep. A candidate moves `watching → proposed` — entering the ADR-0012 propose→review→approve queue, which for capability promotion is chaired by the **Capability Promotion Board (PB-208)**: frequency + value + cost + owner approval decide, and the board is the standing owner-consultation point SD-21 requires before any promoted capability enters an implementation slice [DECISION owner 2026-08-03 / Amendment §8.4 PB-208; doc 24 owns the backlog entry] — when **all** of:
 
 1. **Recurrence:** ≥3 completed runs of the same fingerprint family within 90 days, by ≥2 distinct requesters; **or** ≥2 runs plus an explicit analyst endorsement flag on the artifact.
 2. **Review pass:** on the latest run, a stratified 30-finding human sample achieves ≥90% precision (label + quote correct) via the standard review queue — accusation-adjacent families (violations-like) require ≥95% (precision-over-recall doctrine, CORE-BRIEF §12/E.0).
@@ -698,6 +702,8 @@ CREATE TABLE evidence.custom_collection_unit (        -- membership, not copies
 ```
 
 Membership rows point at the shared `evidence.evidence_unit` store — a collection is a **governed view plus (at most) a dedicated small index**, not a second copy of transcript text.
+
+The registry row already carries the three governance fields the Owner Amendment mandates for every custom RAG — **owner** (`created_by`), **TTL/expiry** (`expires_at`, §9.5 mechanics), and lifecycle **status** [DECISION owner 2026-08-03 / Amendment §12-13; confirmed present, no schema change needed].
 
 ### 9.1 Step 1 — scoped corpus manifest
 
@@ -748,7 +754,7 @@ A collection inherits the **intersection** of its creator's transcript-access sc
 
 ### 9.8 Step 8 — promotion to permanent collection
 
-A collection used ≥5 times by ≥2 users across ≥60 days [REC], with a passing eval, becomes a promotion candidate (same ADR-0012 queue as §8.4, target (c)): its scope spec is registered as a **named permanent evidence collection** (steward-owned, refreshed on ingestion like the global index, listed in `list_capabilities` output). Promotion is a registry act — never automatic.
+A collection used ≥5 times by ≥2 users across ≥60 days [REC], with a passing eval, becomes a promotion candidate (same ADR-0012 queue as §8.4, target (c) — i.e. through the PB-208 Capability Promotion Board): its scope spec is registered as a **named permanent evidence collection** (steward-owned, refreshed on ingestion like the global index, listed in `list_capabilities` output). Promotion is a registry act — never automatic. Per the Owner Amendment, the promotion sign-off requires **both the collection owner and the review lead** [DECISION owner 2026-08-03 / Amendment §12-13; review-lead role binding per doc 16 §2.6, SLA context OD-30].
 
 ### 9.9 Step 9 — deletion
 

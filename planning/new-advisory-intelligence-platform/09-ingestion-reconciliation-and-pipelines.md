@@ -1,8 +1,8 @@
 # 09 — Ingestion, Reconciliation, and Pipelines
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
-**Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
+**Status:** Draft for owner review · **Date:** 2026-08-02, amended 2026-08-03 (Owner Amendment §4 integrated — Nightly Consolidation Run, §10) · **Author:** Planning package (Fable 5)
 **Depends on:** 05 (source contracts), 06 (TranscriptSource + rebase), 07 (architecture, TD-06), 08 (data model) · **Feeds:** 10, 11, 13, 19, 20, 21, 23
-**Sources used:** GREENFIELD §8.1, §8.3, §11.1, §17, §23-09; MASTER_PROMPT §2.4–2.5, §5.3, Appendix D; arch/06 (full); arch/04 §5–§9
+**Sources used:** GREENFIELD §8.1, §8.3, §11.1, §17, §23-09; MASTER_PROMPT §2.4–2.5, §5.3, Appendix D; arch/06 (full); arch/04 §5–§9; Owner Amendment 2026-08-03 §4 (nightly run, full), §3.3, §11.1, §13
 
 ---
 
@@ -18,6 +18,7 @@ Doctrine, stated once and enforced throughout:
 4. **No ASR-correction stage, ever.** The DAG is ingest → resolve → enrich → serve-ready. There is no transcript-rewriting stage and none may be added; transcript quality is a provider-selection problem behind the `TranscriptSource` boundary (doc 06), with an optional read-time deterministic glossary that never writes [DECISION MASTER_PROMPT §2.4; GREENFIELD §2.6].
 5. **A failed model round is INCOMPLETE, never silently empty.** The legacy ASR ensemble swallowed rate-limited rounds to `None`, making throughput loss indistinguishable from clean data [FACT arch/06 §6 "rate-limiting story"; CORE-BRIEF §12 F19]. Every model-call wrapper here returns a typed `Failure(cause)` that cannot be consumed as an empty result (§6.4).
 6. **Everything observable (I16).** Every gate, every retry, every dropped finding, every queue depth is a metric and, where material, an `ops.data_quality_observation` row. Doc 19 owns dashboards/alerts; §5 and §8 define what is emitted.
+7. **One authoritative daily consolidation** [DECISION owner 2026-08-03 / Amendment §4]. Every per-source schedule in §3 executes under the envelope of the **Nightly Consolidation Run — التشغيل الليلي الموحد** (§10; CAP-OPS-01; flag `nightly_consolidation_enabled`). Hourly incrementals reduce latency but never close a day; digests, dashboards, and official artifacts are stamped by nightly runs.
 
 Execution substrate: **Procrastinate on PostgreSQL** (doc 07 TD-06, ADR-0005); DAG logic and stage state live in our own `ingest`/`jobs` tables — the queue executes, the state machine decides [DECISION doc 07 TD-06].
 
@@ -92,6 +93,8 @@ flowchart TB
 There is **no edge** a human executes by hand. The two human touchpoints — steward queue dispositions (E3/E9) and pack sign-off (OD-10) — are decisions recorded in the database that *unblock* coded edges, not steps that *perform* them.
 
 ### 1.3 The daily incremental cycle (sequence)
+
+> **Amendment annotation (2026-08-03):** the cycle below is the *mechanics*; its *orchestration envelope* is the Nightly Consolidation Run (§10). Hourly incrementals (E1) continue between nightly runs as `run_kind='hourly_incremental'` pipeline runs; the 02:00 nightly run [ASSUME OD-28] is the authoritative pass that closes the previous day. Nothing in this sequence is duplicated by §10 — §10 names *when and in what mandated order* these same coded edges fire, and records the run.
 
 ```mermaid
 sequenceDiagram
@@ -300,6 +303,8 @@ Retry policy is two-layered:
 | **SRC-EVAL** | With SRC-INT run (logical split, doc 05 §7) | Inherited from SRC-INT | `(SRC-EVAL, internal_session_id, instrument, submitted_at, row_sha256)` | With SRC-INT backfill | rating lag distribution (`submitted_at - actual_at`); out-of-range count; rating→session link rate |
 | **SRC-OUT** (gated on OD-07) | Daily when active | `updated_at` + 48h lookback | `(SRC-OUT, outcome_ref, updated_at, row_sha256)` | Activation backfill = PB-05 pattern | outcome→session join rate; followup-booked verification rate |
 | **SRC-SNAP** | One-time (doc 20 owns execution) | None — manifest-driven | `(SRC-SNAP, table, row_pk, snapshot_sha256)` | Re-run = restore from same checksummed snapshot; idempotent by manifest | manifest-vs-restored checksum identity; migration balance sheet (in = out + named exclusions, zero unexplained) |
+
+Schedule annotation [DECISION owner 2026-08-03 / Amendment §4.1]: every "daily"/"weekly"/"monthly" cadence above executes as **step 2–3 of the Nightly Consolidation Run** (§10.2) on its due day, each adapter on its own `ingest.ingestion_run` row linked via `pipeline_run_id` (doc 08 §19.2) to the owning consolidation run; SRC-READAI's hourly incremental remains an intraday supplement (`run_kind='hourly_incremental'`), and the six `SRC-DATAHUB-*` sub-feeds (doc 05 §4.0 — SESSION, BENEFICIARY-EVAL, CONSULTANT-EVAL, OUTCOME, DIRECTORY, REFERENCE) are pulled **each on its own contract**, so one failed sub-feed leaves the others running (§10.4 rule 3).
 
 ### 3.3 Generic backfill procedure (all adapters)
 
@@ -542,13 +547,16 @@ A worker restart therefore needs no recovery procedure: incomplete tasks re-run,
 | `ingested` → `identity` attempted | ≤ 2h | > 6h |
 | `transcript_active` → `scored` (new session, steady state) | ≤ 12h | > 24h |
 | Session end → serve-ready | ≤ 48h | > 72h |
-| Review queue item age (violations) | ≤ 7d | > 10d |
+| Review queue item age (violations) | ≤ 7d normal / ≤ 2d high-priority [ASSUME OD-30] | breach feeds `review_backlog_age` |
+| **Nightly Consolidation Run complete** (all 16 steps terminal) | before 07:00 Asia/Riyadh [ASSUME OD-28 — completion SLA is part of the OD] | not `succeeded`/`partial` by 07:00 → page; `partial` → steward task (§10) |
 
 ---
 
 ## 7. Reprocessing playbooks
 
 All playbooks share one template: **trigger → preconditions → idempotency key → steps (all enqueued tasks) → verification → audit artifacts → rollback**. All are invoked via `opsctl` (audited enqueue, §0.2); none are scripts an operator edits. Idempotency comes from content digests (§2.4): re-running any playbook re-does only what the digests say is stale.
+
+*(ID disambiguation, 2026-08-03: the playbook IDs `PB-01…PB-05` in this section predate the product backlog and are **operational playbooks** — distinct from the product-backlog items `PB-001…PB-212` owned by doc 24. Three-digit = backlog, two-digit = playbook.)*
 
 ### PB-01 — Re-extraction under a new prompt/model
 
@@ -604,7 +612,7 @@ Doc 06 §4 owns the operation's own state machine (VALIDATING → CANDIDATE_MARK
 
 ## 8. Pipeline observability summary (doc 19 owns the full spec)
 
-Minimum emitted, mapped to GREENFIELD §17's checklist: ingestion lag + errors per source · reconciliation counters + queue depths/ages (Q1–Q5) · transcript source distribution + quality tiers · enrichment backlog by stage/state (the §2 rows make this one GROUP BY) · model calls with tokens/cost/latency/cause-coded failures per job_class · structured-output validation failures (G-EXT-01) · findings kept/dropped with reasons (G-VAL-01/02) · staleness scanner flips per cause · gate outcomes per gate id · DLQ depth/age per source · freshness SLO attainment (§6.6) · Lane-3 per-partition progress (doc 13). Liveness/readiness: worker heartbeats per pool; a "healthy" status requires DB + queue + budget-manager checks (no healthcheck-without-DB — ISS-06 [FACT CORE-BRIEF §12]). Every run and job reconstructable from `ingestion_run` + `stage_transition` + task logs by request-id (R13).
+Minimum emitted, mapped to GREENFIELD §17's checklist: ingestion lag + errors per source · reconciliation counters + queue depths/ages (Q1–Q5) · transcript source distribution + quality tiers · enrichment backlog by stage/state (the §2 rows make this one GROUP BY) · model calls with tokens/cost/latency/cause-coded failures per job_class · structured-output validation failures (G-EXT-01) · findings kept/dropped with reasons (G-VAL-01/02) · staleness scanner flips per cause · gate outcomes per gate id · DLQ depth/age per source · freshness SLO attainment (§6.6) · Lane-3 per-partition progress (doc 13). Amendment additions (2026-08-03; registry names exact, doc 11 owns definitions): `nightly_run_success` · `data_completeness` · `source_join_rate` · `review_backlog_age` · `suspected_cases_open` — all emitted per nightly run (§10.3) plus per-step durations and per-sub-feed status. Liveness/readiness: worker heartbeats per pool; a "healthy" status requires DB + queue + budget-manager checks (no healthcheck-without-DB — ISS-06 [FACT CORE-BRIEF §12]). Every run and job reconstructable from `ingestion_run` + `ops.pipeline_run`/`pipeline_step_run` + `stage_transition` + task logs by request-id (R13).
 
 ---
 
@@ -618,10 +626,142 @@ Minimum emitted, mapped to GREENFIELD §17's checklist: ingestion lag + errors p
 | OD-11 (review roles) | Q dispositions, G-REV-01 | Append-only assumed |
 | OD-13 (second Read.ai OAuth client) | SRC-READAI credential independence | Token-rotation health metric is the early-warning signal |
 | OD-14 (national-ID handling, introduced in doc 05) | M2 rung legality | Safe assumption: restricted crosswalk column |
-| Revisit: G-PACK-01 98% threshold | 3 production months | Tune from observed enrichment-lag distribution |
+| OD-28 (nightly run time + completion SLA, 2026-08-03) | §10.1 start time; §6.7 completion SLO | Assume 02:00 Asia/Riyadh, configurable; complete before 07:00; hourly Read.ai incremental allowed, nightly authoritative |
+| OD-30 (review SLA + assignment, 2026-08-03) | `review_case.sla_due_at` (doc 08 §19.4); §6.7 row | Assume 7d normal / 2d high; assignment by review lead |
+| Revisit: G-PACK-01 98% threshold (= the Amendment §13 month-close completeness gate) | 3 production months | Tune from observed enrichment-lag distribution; gate and infographic trigger share ONE threshold |
 | Revisit: M3 weights/thresholds | EXP-01 labelled 500-pair sample | Calibrate before any auto-accept in production |
 | Revisit: budget shares §6.2 | First Lane-3 production month | Re-split from observed contention |
 
 ---
 
-*End of document 09. Lane-3 job internals (manifest, map/verify/reduce, caching, promotion): doc 13. Rebase operation internals: doc 06 §4. Contracts and dictionaries per source: doc 05. Canonical DDL: doc 08. Dashboards, alerts, runbooks, DR: doc 19. Snapshot bootstrap execution and parallel run: doc 20.*
+## 10. Nightly Consolidation Run — التشغيل الليلي الموحد [DECISION owner 2026-08-03 / Amendment §4]
+
+The platform's one named, owner-visible operational journey: from pulling both source classes to outputs appearing for users, recorded as a first-class run. Capability **CAP-OPS-01** (`nightly_consolidation_run`), flag **`nightly_consolidation_enabled`**, backlog **PB-001**, slice **VS-03**, screen **SCR-14** (مركز تشغيل البيانات, CAP-OPS-02, PB-002). This section is the orchestration *envelope* over the machinery of §§1–7 — it names when and in what mandated order the existing coded edges fire, and how the run is recorded; it duplicates none of their mechanics. Where a §§1–7 statement framed the daily cycle as merely "scheduled per adapter", this section **supersedes that framing**: schedules are the run's steps.
+
+### 10.1 Name, timing, and the incremental/authoritative distinction
+
+- **Name:** `Nightly Consolidation Run — التشغيل الليلي الموحد`. Run records: `ops.pipeline_run` + `ops.pipeline_step_run` (doc 08 §19.2).
+- **Timing:** starts daily at **02:00 Asia/Riyadh, configurable** [ASSUME OD-28 — completion SLA before 07:00, §6.7]. Enqueued by the Procrastinate scheduler as any other periodic task (§0.1: no hand-run steps); `opsctl nightly start` exists as an audited manual trigger.
+- **Hourly incremental vs nightly authoritative** [DECISION Amendment §4.1]:
+
+| | Hourly incremental (`run_kind='hourly_incremental'`) | Nightly authoritative (`run_kind='nightly'`) |
+|---|---|---|
+| Purpose | Latency reduction (fresh transcripts intraday) | **Close the previous day** |
+| Scope | SRC-READAI head-walk only (E1) + enrichment of what arrived | Pull **all** sources; re-reconcile; complete analysis; refresh queues, views, digests |
+| May emit digest / official artifacts? | Never | Yes — steps 15–16 |
+| Cited by dashboards/packs? | No — supplementary | Yes — the stamped daily truth |
+| On conflict | Whatever an increment ingested is re-listed and re-covered by the nightly pass; content-addressing makes overlap free (§3.1, doc 05 §2.5) | Authoritative |
+
+### 10.2 The 16 mandatory steps
+
+Order is mandatory; each step writes its `ops.pipeline_step_run` row; every step reuses the named existing machinery (annotate, not duplicate). Steps 2–3 run in parallel per source; 4–6 fan in; 7–13 proceed per session under the §2 state machine.
+
+| # | Step (Amendment §4.2) | Required output | Executes as (existing machinery) |
+|---:|---|---|---|
+| 1 | Preflight — التحقق المسبق | Secrets reachable, connectivity, last watermark per source, storage headroom, contract versions | New `ncr_preflight` task: vault refs (doc 05 §1.3), `ingest.source_cursor`, `ingest.source_system.contract_version`, MinIO + DB checks; failure ⇒ run `failed` before any pull (fail-closed) |
+| 2 | Pull Read.ai / Transcript Provider | New/changed meetings + transcripts stored **raw, never replacing history** (I6) | SRC-READAI/SRC-TSP adapter runs (E1/E2, §3.1–3.2); changed transcript bytes park as inactive versions (§2.4) |
+| 3 | Pull DataHub sub-feeds | Sessions, evaluations, consultants, outcomes, reference — **each sub-contract on its own run** | Six `SRC-DATAHUB-*` adapter runs (doc 05 §4.0), each an `ingest.ingestion_run` linked by `pipeline_run_id` |
+| 4 | Validate contracts | Schema drift, unknown values, anomalous volumes surfaced | Gates G-ING-01/02/03 (§5) + doc 05 `DQ-*` rules; BLOCKs → DLQ |
+| 5 | Normalize | Canonical staged rows, raw preserved | `adapter.normalize` (§3.1); no identity, no joins |
+| 6 | Reconcile and link | Session Crosswalk built/updated; missing/conflicting/duplicate detected; steward cases minted | Resolver ladder M0–M3 (§4) + queues Q1–Q5 → `ops.reconciliation_case`/`ops.data_quality_issue` (doc 08 §19.3); daily measures per doc 05 §4.0.2-3 |
+| 7 | Activate transcript version | Exactly one active version per session chosen by rule; **text never modified** | E4 + doc 06 §2.3; first version auto-activates; later versions ONLY via `rebase_transcript` (PB-03) |
+| 8 | Incremental enrichment | Challenges, questions, steps, satisfaction, pressure, decisions, entities, … extracted | `extract_session` for digest-stale/pending sessions only (E5/E6, §2.4) |
+| 9 | Quality scoring | Metrics + scores computed programmatically with a named methodology version | Scoring stage (E8); I3 — code computes, never a model |
+| 10 | Violation detection | Suspected findings with quote, position, speaker, confidence, **detector version** | Violation extraction stamped `detector_release_uid` (doc 08 §19.5; doc 14 release lifecycle); suspected ≠ approved everywhere (SD-20) |
+| 11 | Review-case generation | «اشتباه مخالفة» cases opened/updated with basis fingerprints; no duplicates on re-run | `findings.review_case` upsert keyed `(session, basis_fingerprint)` (doc 08 §19.4); SLA stamped [ASSUME OD-30] |
+| 12 | Evidence indexing | Index refreshed **only for what changed**; embedding model + version stamped | E11 incremental embed (doc 08 §11); I13 provenance |
+| 13 | Refresh semantic views | Metrics, materialized views, **Session 360**, dashboards current | Serving-visibility rows (§2.5) + view refresh; late-arriving facts re-project الجلسة 360 (CAP-OPS-03) without full rebuilds (doc 05 §4.0.2-5) |
+| 14 | DQ and completeness | Coverage, freshness, exclusions, per-source state computed | Daily roll-up (§3.4) + `data_completeness`, `source_join_rate` (doc 11 registry) |
+| 15 | Alerting and digest | **Morning digest «صباحيات الخدمة»** + threshold alerts/tasks opened | §10.5; `ops.notification_delivery` (doc 08 §19.8); doc 19 alert rules |
+| 16 | Month/quarter close trigger | At period end: **draft infographic + official pack** after the completeness gate | §10.5; G-PACK-01 (§5) ≥98% [ASSUME Amendment §13]; `packs.monthly_infographic` draft (doc 08 §19.6) + pack builds (E10) |
+
+*(Step 2 note: "never replacing history" — re-fetches append new payload versions; nothing overwrites raw (I6).)*
+
+### 10.3 Run states and the run record
+
+States (exact, Amendment §4.3): `queued → running → partial → succeeded → failed → cancelled → superseded`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> queued
+    queued --> running : scheduler / opsctl
+    queued --> cancelled
+    running --> succeeded : all 16 steps succeeded
+    running --> partial : ≥1 step partial/failed, rest completed (loud, never silent success)
+    running --> failed : preflight failure or unrecoverable orchestration error
+    running --> cancelled : operator abort (audited)
+    partial --> superseded : repaired re-run of same business_date completes
+    failed --> superseded : re-run completes
+    succeeded --> superseded : forced authoritative re-run (rare, audited)
+    superseded --> [*]
+    succeeded --> [*]
+```
+
+Semantics: `partial` is the state the partial-run rule produces — e.g. `SRC-DATAHUB-BENEFICIARY-EVAL` failed while the other five sub-feeds and transcript ingest completed (doc 05 §4.0 rule 3); a `partial` run **serves what completed** and shows the gap loudly on SCR-14. A re-run of the same `business_date` that reaches a terminal-better state marks the older run `superseded` (unique-active index, doc 08 §19.2). `ingest.ingestion_run` keeps its own 4-state per-source enum unchanged — the 7-state machine lives at consolidation grain only (annotation, not duplication).
+
+Every run records (Amendment §4.3 list → `ops.pipeline_run` columns, doc 08 §19.2): `run_uid` · start/finish times · **watermark per source** (before/after snapshot of `ingest.source_cursor`) · records pulled/new/updated/rejected · sessions completed/excluded/late · per-step status (`pipeline_step_run`) · classified errors · retry count · **versions stamp** (code, contract versions, model ids, prompt SHAs, taxonomy versions, active detector release) · links to DLQ items and DQ issues · `manifest_uri` (downloadable run manifest).
+
+### 10.4 Failure and resume rules [DECISION Amendment §4.4]
+
+1. **Idempotent by construction**: re-running the same period duplicates nothing — task idempotency keys (§6.6), content-addressed payloads (doc 05 §2.5), digest-driven staleness (§2.4), and the review-case natural key `(session, basis_fingerprint)` (doc 08 §19.4) each pin one layer. Acceptance test §10.7-2.
+2. **Independent watermark per source adapter**: `ingest.source_cursor` rows (doc 05 §1.3); never advanced past unfetched items (E1); backfills use isolated cursors (§3.3).
+3. **One failed item never fails the group — and failure is never silent success**: item isolation (§3.1), typed `MapFailure` (§6.4), run marked `partial` (I16).
+4. **Every failed item enters the DLQ** with a typed cause and replay path (doc 05 §1.5).
+5. **No infographic or official report from an incomplete run without a documented override that renders on the artifact's face**: G-PACK-01 (§5) + `completeness_override_reason` (doc 08 §19.6) — the override is stamped into the artifact, not a log line.
+6. **Re-running a stage skips unaffected stages** whose digests are unchanged (§2.4).
+7. **A transcript active-source change invalidates derived results and triggers an orderly rebase** — PB-03 + the blast radius of doc 06 §4.8 (review cases → `stale_needs_review`; dataset items marked; infographic drafts blocked). Never an implicit flip inside a nightly run (§10.2 step 7).
+8. **Two operational commands exist, exactly as named** (audited enqueues per §0.2, PB-04 machinery underneath):
+   - `opsctl nightly rerun-failed --run <run_uid>` — **rerun failed items**: replays that run's DLQ items per policy and re-enqueues its `failed`/`partial` steps; untouched steps are digest-skipped; the repaired execution supersedes the old run record.
+   - `opsctl nightly reprocess --sessions <session_uid…>|--period <month>` — **reprocess selected sessions**: targeted digest invalidation (§2.4) + re-enrichment for exactly the named sessions; identity and raw layers untouched; zero duplicate findings by idempotency keys.
+9. **Resumability never depends on local JSON files or process memory** — all resume state is Postgres rows: `ops.pipeline_run`/`pipeline_step_run`, `ingest.session_stage_state`, task idempotency keys (§0.3, §6.6; the 592 KB laptop-checkpoint lesson [FACT arch/06 §7.6]). A worker restart mid-run resumes by re-reading rows; nothing is replayed from memory.
+
+### 10.5 Morning digest and the month/quarter-close trigger
+
+**Step 15 — «صباحيات الخدمة» (CAP-OPS-10, SCR-21, PB-016).** After the nightly run reaches a terminal state, one digest per subscriber (`ops.notification_subscription`, kind `morning_digest`; channels Portal + approved Email [ASSUME OD-29]) — content per Amendment §11.1: new sessions; new suspicion cases (`suspected_cases_open`); overdue reviews (`review_backlog_age`); new 1–2★ ratings; sessions ending without clear steps; DataHub/Read.ai issues; the single most important alert — every item a **link** to its screen (SCR-08/14/15/22…), uids only, no P2 content in the body (doc 16). A `partial` run's digest leads with what is missing. Delivery rows: `ops.notification_delivery`, citing `pipeline_run_id`; failures alert (doc 19).
+
+**Step 16 — month/quarter close.** On the first nightly run after period end: compute `data_completeness` for the closed period; when the completeness gate passes — **≥98% of period sessions in terminal enrichment states, the same G-PACK-01 threshold, one gate not two** [ASSUME Amendment §13; REC threshold shared] — mint the **draft infographic** (`packs.monthly_infographic`, status `draft`, doc 08 §19.6 — drafted the morning of day 2 of the new month or when the gate passes, whichever is later [ASSUME Amendment §13]) and enqueue the official pack builds (E10). Below the gate: no draft; a steward task opens; an owner may force via audited `opsctl pack force`, and the shortfall + override reason render **on the face** of everything produced (rule §10.4-5). Approval flow after draft: doc 08 §19.6 (`draft → data_review → content_review → approved → published`), publication authority per OD-10, channels per OD-29.
+
+### 10.6 User-facing progress state — SCR-14 «مركز تشغيل البيانات»
+
+The ops centre screen (CAP-OPS-02, PB-002; doc 18 owns layout) reads **live rows only — nothing hardcoded** (I16; Amendment §10.4-7 prohibition; acceptance §10.7-6):
+
+| SCR-14 element (Amendment §4.5) | Backing data |
+|---|---|
+| Last run + status; run history | `ops.pipeline_run` (uid, kind, business_date, 7-state status, times, attempts) |
+| Per-source state + last success time | `ingest.ingestion_run` (via `pipeline_run_id`) + `ingest.source_cursor` + freshness (§3.4 roll-up) |
+| New/changed session counts | `pipeline_run.counts` |
+| Pipeline steps + duration per step; live progress | `ops.pipeline_step_run` (16 rows: status, started/finished, counts) — progress = steps terminal /16, plus per-step counters while `running` |
+| Unmatched sessions | Q1/Q2 views (§4.3, doc 05 §10.1) + open `ops.reconciliation_case` |
+| Sessions without transcript | `session_stage_state` `not_applicable(no_transcript)` (G-TRX-01) |
+| New suspicion cases; overdue review cases | `findings.review_case` (state, `sla_due_at`; metrics `suspected_cases_open`, `review_backlog_age`) |
+| Current-month completeness | `data_completeness` vs the 98% gate |
+| Actions: retry, open issue, view logs, reprocess session, download run manifest | `opsctl` commands (§10.4-8; every action an audited enqueue, §0.2); `manifest_uri` |
+
+UI progress vocabulary = exactly the run/step state enums of §10.3 — no screen-side invented states.
+
+### 10.7 Acceptance criteria [DECISION Amendment §4.6 — binding for VS-03; test specs in docs 15/25]
+
+1. Ingesting a fixture of 20 Read.ai sessions + 20 DataHub records yields the correct **Session 360 count with zero duplicates** (crosswalk correctness, doc 05 §4.0.2).
+2. Running the same nightly run twice changes **no counts** and creates **no duplicate review cases** (idempotency, §10.4-1).
+3. A `SRC-DATAHUB-BENEFICIARY-EVAL` failure makes the run **`partial` while transcript ingest still succeeds** (partial-run rule, doc 05 §4.0 rule 3).
+4. A late-arriving evaluation **updates the session and appears in Session 360 on the next run** (re-projection, no full rebuild — §2.4; doc 05 §4.0.2-5).
+5. A generated suspicion case **appears in the «اشتباه مخالفة» queue and opens the correct transcript at the quoted position** (R7 anchoring; doc 08 §19.4; SCR-08).
+6. The SCR-14 dashboard shows **watermarks, coverage, and errors from real data — no hardcoded values** (I16; doc 23 §13 MUST-NOT list).
+
+### 10.8 Wiring summary — what this section supersedes or annotates in §§1–8
+
+| Existing text | Status after this section |
+|---|---|
+| §0 doctrine | Extended with item 7 (nightly envelope) |
+| §1.1 DAG, §1.2 edges E1–E13 | **Unchanged** — §10.2 maps steps onto the same edges; no second DAG exists |
+| §1.3 "daily incremental cycle" | **Annotated**: mechanics unchanged; orchestration + naming now §10; hourly = `hourly_incremental` runs |
+| §2 session state machine | **Unchanged** — the run *reads and drives* it; run-grain state is `ops.pipeline_run` only |
+| §3.2 per-adapter schedules | **Annotated**: cadences execute as nightly steps 2–3; sub-feed independence per doc 05 §4.0 |
+| §5 G-PACK-01 | **Annotated**: its 98% threshold is now also the Amendment §13 month-close completeness gate — one shared threshold |
+| §6.5 priorities, §6.6 idempotency, §6.7 SLOs | Extended: nightly steps inherit the priority ladder (steps enqueue the same task classes); SLO row added for run completion |
+| §7 playbooks PB-01…PB-05 | **Unchanged**; §10.4-8's two commands are thin, exactly-named entry points over PB-04 machinery; ID disambiguation noted at §7 top |
+| §8 observability | Extended with the amendment metric names and run/step emission |
+
+---
+
+*End of document 09. Lane-3 job internals (manifest, map/verify/reduce, caching, promotion): doc 13. Rebase operation internals: doc 06 §4 (+ §4.8 blast radius). Contracts and dictionaries per source: doc 05 (SRC-DATAHUB family §4.0). Canonical DDL: doc 08 (amendment entities §19). Dashboards, alerts, runbooks, DR: doc 19. Snapshot bootstrap execution and parallel run: doc 20.*
