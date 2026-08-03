@@ -293,7 +293,7 @@ Boundary example — «ما القطاع التجاري الأكثر نمواً�
   "boundary": {
     "reason_code": "DIMENSION_NOT_AVAILABLE",
     "message_ar": "هذا التقسيم (القطاع التجاري للمنشأة) غير متوفر في بيانات المنصة حالياً. التقسيمات المتاحة: فئة الخدمة، البرنامج، القناة، الجهة الحكومية المذكورة.",
-    "alternatives": [ {"question_ar":"ما فئات الخدمة الأكثر طلباً خلال ٣ أشهر؟","capability_id":"CAP-C4"} ]
+    "alternatives": [ {"question_ar":"ما فئات الخدمة الأكثر طلباً خلال 3 أشهر؟","capability_id":"CAP-C4"} ]
   }, "turn_seq": 5 }
 ```
 

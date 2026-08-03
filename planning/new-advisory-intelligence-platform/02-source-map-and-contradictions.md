@@ -21,9 +21,9 @@ This document is the **required source-analysis pass** of GREENFIELD §1.2: an e
 
 **Prescriptive** (what the new platform must be):
 
-1. GREENFIELD owner requirements (§2, §5);
-2. GREENFIELD non-negotiables I1–I18 (§7);
-3. settled owner decisions carried forward or issued since (SD-01…SD-17 below);
+1. GREENFIELD owner requirements (§2, §5) **and the OWNER-AMENDMENT of 2026-08-03 (§1.11 below) at the same rank — owner-requirements level; within the rank, the amendment is later-in-time owner instruction and prevails over pre-amendment text wherever they differ** (the five real divergences are resolved as CON-30…CON-34, §2 Tier 3);
+2. GREENFIELD non-negotiables I1–I18 (§7) — untouched by the amendment: its §0.5 no-weakening list maps 1:1 onto I2, I3, I4, I5, I7, I9, I6, the review-first rule, and I15;
+3. settled owner decisions carried forward or issued since (SD-01…SD-22 below);
 4. this package's recommendations, with alternatives and revisit-triggers;
 5. current legacy behaviour — only where still justified. **Current behaviour is never an argument for keeping current behaviour** [FACT GREENFIELD §1.1].
 
@@ -216,11 +216,35 @@ One table per source. Only *materially relevant* rows — facts and requirements
 | G23 | Quality bar: 17 rejection conditions; claim classification mandatory; every component states the failure it prevents | GF §24 | SD | §14 of the package spine; self-check applied to every document |
 | G24 | Counts are planning baselines, not permanent truths; reproducible measurement script required before use in capacity/migration/stakeholder material | GF §1.3 | SD | §7 below; the committed-script requirement is assigned to doc 09/20 deliverables |
 
+### 1.11 OWNER-AMENDMENT (2026-08-03) — binding change request; Sol 5.6 review accepted by the owner
+
+Anchor notation: `AMD §S`. Prescriptive rank: **owner-requirements level** (§0.1 ladder rung 1, later-in-time within the rank). The amendment touches nothing on the descriptive ladder — it is a change request over what to build, integrated in the 2026-08-04 pass (`PLAN_CHANGELOG.md` is the per-document record; `TRACEABILITY_OWNER_AMENDMENTS.md` the requirement matrix).
+
+| # | Requirement | Anchor | Class | Effect on the plan |
+|---|---|---|---|---|
+| AM1 | Re-orient from horizontal architecture-first build to an operational, incrementally demonstrable product; **no product code until the amended package is owner-approved**; the agent gets an execution protocol with mandatory stops | AMD §0.2–§0.6, §1.2 | SD | SD-18; doc 00 §6 start gate; docs 21/23/25; CON-31 |
+| AM2 | Six operational loops (daily data, violation review, detector improvement, service improvement, leadership communication, new question) must appear in architecture, data model, APIs, screens, monitoring, tests, backlog | AMD §2 | SD | Docs 07/08/17/18/19/15/24; TRACEABILITY §1 |
+| AM3 | DataHub = first-class institutional source family `SRC-DATAHUB` with six sub-contracts, Field Authority Matrix, crosswalk/late-arriving/partial-failure rules; Excel upload = temporary fallback only | AMD §3 | SD | Doc 05 owns; docs 08/09; OD-07 extended; CON-32 |
+| AM4 | Nightly Consolidation Run «التشغيل الليلي الموحد»: 16 mandatory steps; states `queued → running → partial → succeeded → failed → cancelled → superseded`; idempotency, per-adapter watermarks, DLQ; acceptance criteria AMD §4.6; screen «مركز تشغيل البيانات» | AMD §4 | SD | Docs 09 (owns)/07/08/17/18 (SCR-14)/19; CAP-OPS-01/02; PB-001/002; VS-03; [ASSUME OD-28] for timing |
+| AM5 | «اشتباه مخالفة» page + review cycle: suspected ≠ approved; `violation_finding`/`review_case`/`review_event` append-only separation; six closed decisions; quote context ±5 turns; reopened-by-change filter; acceptance AMD §5.7 | AMD §5 | SD | SD-20; docs 08/10/17/18 (SCR-08 upgraded); PB-006…010; VS-02; [ASSUME OD-30/OD-35] |
+| AM6 | Governed detector learning: 8 labelled-data sources; missed-case reporting «إضافة اشتباه لم يرصده النظام»; weekly stratified unflagged sampling; 11-stage release line; anti-bias rules; consultant names never features | AMD §6 | SD | SD-22; docs 14 (owns lifecycle)/15/19; CAP-OPS-06/07; PB-010/011; VS-04; EXP-11; [ASSUME OD-32/OD-33] |
+| AM7 | Monthly leadership infographic «نبض خدمة الاستشارات والإرشاد — ملخص الشهر»: standalone one-page product; web+PDF+PNG byte-identical; lifecycle draft→data_review→content_review→approved→published→superseded/retracted; structured-data-only rendering; approved-violations only; no consultant names in the general edition | AMD §7 | SD | SD-19; docs 04 (CAP-OPS-08)/09/10/11/16/17/18 (SCR-20)/19; PB-014; VS-05; [ASSUME OD-29/OD-31; OD-10 extended] |
+| AM8 | Product backlog with card discipline and priorities; renamed release waves **Wave A/B/C** (PB-001…018 / PB-101…120 / PB-201…212); backlog = standing consultation list | AMD §8 (+ owner rule) | SD | SD-21; doc 24 owns; CON-33 |
+| AM9 | Vertical slices VS-00…VS-12; exposure levels L0/L1/L2/L3; mandatory stop after every slice (demo → acceptance → gaps → approval; never auto-continue) | AMD §9 | SD | SD-18; doc 25 owns; docs 21/23 point to it; CON-30/CON-31 |
+| AM10 | Agent execution protocol: tickets ≤4–8h; pre-ticket plan; DoD incl. authorization test + `docs/STATE.md`/`PRODUCT_BACKLOG.md`/`KNOWN_GAPS.md`; ten prohibitions; seven exact feature flags; staged data strategy; per-cycle evidence outputs | AMD §10 | SD | Doc 23 owns; doc 25; TRACEABILITY §9 |
+| AM11 | High-value monitoring features enter the governed backlog (not the first release): «صباحيات الخدمة»، Service Recovery Queue، Radar المواضيع الصاعدة، فجوات المعرفة، بطاقات التدريب، تناقض مصادر التقييم، Watchlists محكومة، Best-practice Library، Decision Log | AMD §11 | SD | Doc 24 (PB-016 Wave A; PB-101/103/104/105/106/107/109/117/118/120 Wave B); SD-21 governs entry |
+| AM12 | Mandatory per-document edits across 00…23 + two new documents 24/25 + changelog + traceability | AMD §12, §14.5 | SD | PLAN_CHANGELOG §3–§4 (record); TRACEABILITY §11 (coverage) |
+| AM13 | Working assumptions until the owner decides (nightly time, channels, review SLA, name visibility, FN sampling, release cadence, action ownership, first type, DataHub batch/API) | AMD §13 | AS | OD-28…OD-35 + OD-07/OD-10 extensions (§5.1 below; register doc 22 §3.2) |
+| AM14 | Acceptance criteria for the re-planned package: product completeness, slice-based delivery, traceability artifacts, governance non-weakening; required outputs incl. the five VS-00 ticket specs | AMD §14 | SD | Doc 00 §6 gate; PLAN_CHANGELOG §9; TRACEABILITY §13; docs 23/25 |
+| AM15 | Mandatory start order after approval: VS-00 → stop → VS-01 → stop → VS-02 → VS-03 → VS-04 → VS-05, then expansion per approved backlog — never starting with Lane 1/Lane 3 or the full capability catalogue | AMD §15 | SD | Doc 25 (slice order); doc 00 §6; doc 23 (no-auto-next) |
+
+**DataHub note (supersession of record):** with AM3, **DataHub becomes a first-class source family** — `SRC-DATAHUB` with sub-contracts `SRC-DATAHUB-SESSION`, `-BENEFICIARY-EVAL`, `-CONSULTANT-EVAL`, `-OUTCOME`, `-DIRECTORY`, `-REFERENCE`. This **supersedes the SRC-INT-centric framing** used by the pre-amendment package (SRC-INT/SRC-EVAL/SRC-OUT/SRC-DIR/SRC-REF as five parallel general contracts): those five IDs survive as named views/sub-contracts of the family, **doc 05 owns the restructure** and states the supersession explicitly, and Excel upload is a temporary fallback only — never the target mechanism [DECISION owner 2026-08-03, Amendment §3; CON-32]. Access mechanism and freshness SLA remain under the extended OD-07.
+
 ---
 
 ## 2. CONTRADICTION LOG
 
-Every materially inconsistent statement found across the sources, resolved by the GF §1.1 ladders. **Tier 1** items would have misdirected the redesign if inherited; **Tier 2** items are doc-vs-code/doc-vs-doc drift that calibrates how much to trust each source class.
+Every materially inconsistent statement found across the sources, resolved by the GF §1.1 ladders. **Tier 1** items would have misdirected the redesign if inherited; **Tier 2** items are doc-vs-code/doc-vs-doc drift that calibrates how much to trust each source class; **Tier 3** (added 2026-08-04) items are the plan-vs-amendment divergences resolved under the prescriptive ladder when the OWNER-AMENDMENT was integrated (CON-30…CON-34).
 
 Format: claim A vs claim B → resolution (with ladder rule) → consequence for this package.
 
@@ -318,6 +342,40 @@ The composite handler vs the orchestrator's 5 SQL sub-handlers; routed via the l
 | CON-28 | `verify_v2_environment.py` WARNs (not fails) on DB-only tables — blind to exactly the F3 condition; FAILS on models-only tables | arch/02 §9/570; arch/06 §5 | Asymmetry confirmed | Drift detection in the new platform fails closed both directions (doc 15 structural checks) |
 | CON-29 | main.py docstring port 8002 vs Dockerfile 8011; ADMIN_PORTAL D3 admin-scope vs actual require_admin routes; dashboard "top intents" panel actually groups post-override `plan_type` | arch/05 §7.8, §1.3; arch/08 ISS-15 | Code/measurement wins in each | Minor; folded into the docstring-distrust rule and doc 19's honest-labelling rule |
 
+### Tier 3 — plan-vs-amendment conflicts (OWNER-AMENDMENT 2026-08-03; resolved in the 2026-08-04 integration pass)
+
+These five are not source contradictions about the legacy system; they are the places where the pre-amendment package text and the Owner Amendment genuinely diverged. Resolution rule: prescriptive ladder rank 1, later-in-time within the rank (§0.1) — the amendment wins, **but every resolution below preserves all invariants and gates** (AMD §0.5). No other document may re-litigate these; they cite the CON IDs.
+
+**CON-30 — "Nothing user-facing before EXP-09/EXP-10" vs owner previews after every slice.**
+- A: Doc 21 §1(4) sequencing principle "Nothing user-facing before EXP-09/EXP-10"; echoed in doc 23 §4(4)/§13(1) (no pilot before EXP-10, no narrative before EXP-09) [FACT doc 21 §1; doc 23 §13].
+- B: The owner mandates internal previews after every development slice, on synthetic or governed limited staging data, so gaps surface early; the old phrasing must change [DECISION owner 2026-08-03, AMD §0.9, §9.2, §13 (first Owner Preview after VS-01)].
+- **Resolution:** exposure levels L0–L3 (AMD §9.2). **L1 owner previews are allowed — and required — from the earliest slices on synthetic/staging data; EXP-09/EXP-10 and the other production gates guard L2 (pilot) and L3 (production) exposure only, never L1.** L1 success never authorizes L2/L3; no operational decisions are taken from L1. Doc 21's principle is rewritten as "nothing **L2/L3**-visible before its gates"; docs 15/20/23 aligned. No gate weakened — its scope stated correctly (SD-18).
+- Consequence: doc 25 owns the exposure table; every slice's demo script declares its level; parity runs (doc 20) are L2/L3 gates, never L1 blockers.
+
+**CON-31 — Horizontal phase delivery vs the incremental vertical-slice mandate.**
+- A: Doc 21 delivers by dependency phases P0–P7 (foundations → ingestion → enrichment → semantic layer → serving → …), with the first coherent user-facing product late; doc 23 hands Opus 5 a 20-epic strict-dependency order starting at EPIC-01 [FACT docs 21/23].
+- B: The owner rejects layer-first execution: build a small complete path source→screen, test it, accept it, then one full feature at a time, system runnable after every step [DECISION owner 2026-08-03, AMD §1.2, §9.1].
+- **Resolution:** both structures retained with distinct roles. **Phases P0–P7 + experiment gates remain the dependency/gate framework (what must be true); VS-00…VS-12 become the execution overlay (what gets built, shown, and accepted, in order).** Each VS maps to a subset of phase deliverables/epics; a VS may pull forward the minimal slice of a later phase's machinery (e.g. VS-05 pulls a minimal pack-render path forward) provided its L2/L3 exposure still waits for the owning phase's gates. EPIC-01…20 remain the ticket inventory, re-sequenced and split into ≤4–8h tickets under the VS order. First executable order after approval = VS-00 only, stop-accept before VS-01. Doc 25 owns the protocol; docs 21/23 point to it.
+- Consequence: SD-18; doc 00 §6 gate rewritten; no roadmap/handoff contradiction remains (AMD §14.3).
+
+**CON-32 — Five parallel internal source contracts vs DataHub as a first-class institutional source.**
+- A: Pre-amendment doc 05 models internal data as SRC-INT, SRC-EVAL, SRC-OUT, SRC-DIR, SRC-REF — general contracts of equal rank, with the Excel bridge as legacy evidence and OD-07 covering access generically [FACT doc 05 pre-amendment].
+- B: The owner requires one institutional source of the first rank: `SRC-DATAHUB — Monsha'at Internal Advisory DataHub`, internally split into six sub-contracts, with a Field Authority Matrix and reconciliation/late-arriving/partial-failure rules; Excel must not be a target mechanism [DECISION owner 2026-08-03, AMD §3].
+- **Resolution:** **restructure, not addition** — the SRC-DATAHUB family becomes the framing; the five prior IDs become named views/sub-contracts of the family; doc 05 states the supersession explicitly so no two competing framings coexist; Excel upload = temporary fallback only; OD-07's text is extended (sub-feed contracts + daily batch/API assumption) rather than minting a new OD.
+- Consequence: §1.11 DataHub note above; docs 08/09 keep `advisory_session_id` + crosswalk discipline per sub-feed; EXP-01 join-rate measurement applies per sub-contract.
+
+**CON-33 — Backlog priority names "P0/P1/P2" colliding with phase names P0…P7.**
+- A: AMD §8.1 names its release priorities P0/P1/P2 — the same tokens doc 21 uses for delivery phases; package rule: one meaning per ID [FACT CORE-BRIEF §13-1; doc 00 §8].
+- B: Both meanings are owner-sanctioned text; neither can silently absorb the other.
+- **Resolution:** release waves are renamed **Wave A / Wave B / Wave C** (Wave A = amendment P0, Wave B = P1, Wave C = P2); P0…P7 remain phase names exclusively; the mapping is stated **once, in doc 24**, and nowhere re-derived. Any wave written as "P0/P1/P2" anywhere in the package is a defect.
+- Consequence: doc 24 wave columns; PB-001…018 = Wave A, PB-101…120 = Wave B, PB-201…212 = Wave C.
+
+**CON-34 — Agentic-chat centrality vs the operational product as the centre.**
+- A: The pre-amendment product surface centres the analytical conversation: GREENFIELD §8's lane architecture is the product's face, and doc 18's screen order leads with SCR-01 المحادثة [FACT GF §8; doc 18 pre-amendment].
+- B: «لا تجعل Agentic chat مركز المعمارية؛ المنتج التشغيلي هو المركز والوكيل واجهة فوقه» — and the screen order must put operations and review first [DECISION owner 2026-08-03, AMD §12-07, §12-18].
+- **Resolution:** **the operational product (nightly run, Session 360, «اشتباه مخالفة», infographic, Action Center, digests) is the centre; the agent is an interface above it, delivered in later slices** (VS-07 proves five deterministic capabilities; VS-09 adds Lanes 1/2; VS-10 Lane 3). The agent never creates or approves a violation and never publishes an infographic or action outside the authorized workflow; it gains permission-scoped read-only tools over Session 360 / review state / actions. Lanes, toolbelt, verifier gates and injection isolation are unchanged — only centrality and sequencing move.
+- Consequence: docs 07 (component centrality), 12 (sequencing + tool additions), 18 (build order SCR-14 → SCR-15 → SCR-08 → … → chat); CAP catalogue untouched.
+
 ---
 
 ## 3. OBSOLETE MECHANISMS REGISTER
@@ -377,8 +435,15 @@ Owner decisions that bind this package. Each is [DECISION] class with its citati
 | SD-15 | **CAP-C5 is literal extraction only** («مجرد استخراج من النص»): government-entity friction output is *mentions in sessions*, never an assessment of an entity's institutional performance — a wording constraint on every renderer and pack | [DECISION GF §5-C5; MP §4-C] | Docs 04, 10, 18 (Arabic copy rules) |
 | SD-16 | **No transcript-provider scope creep**: the platform does not build a meeting bot/recorder without a separate approval; STT-over-audio is a contingency to assess only | [DECISION GF §2.1, §9.4] | Docs 03, 06; OD-12 |
 | SD-17 | **No self-hosted generative models — all generative inference runs on Groq.** The deployment environment is CPU-only (no GPU exists or is planned); the only local models are embeddings, on CPU (ONNX/int8). Consequence: there is no in-environment generative fallback — OD-04 outbound approval is a hard dependency for every transcript-reading capability | [DECISION owner 2026-08-03] | Docs 07 TD-09, 13 §12, 14 §1.6, 16 §9.1, 19 §capacity, 22 ADR-0013/0014, 23 §13 |
+| SD-18 | **Incremental vertical-slice delivery with mandatory stop-accept.** Delivery is re-planned as slices VS-00…VS-12; after every slice: demo → acceptance tests → gaps recorded → owner approval before the next slice; L1 owner previews happen from the earliest slices on synthetic/staging data; production gates (EXP-09/10 etc.) gate L2/L3 exposure only, never L1 previews; no fully-parallel multi-epic development by one agent; first executable order after package approval = VS-00 only | [DECISION owner 2026-08-03, Amendment §0.6–§0.9, §9, §15] | Doc 25 (owns protocol); docs 21 (overlay), 23 (no-auto-next), 00 §6 (gate); CON-30/CON-31 |
+| SD-19 | **The monthly leadership infographic is a standalone early product** — «نبض خدمة الاستشارات والإرشاد — ملخص الشهر» (CAP-OPS-08, PB-014, VS-05): one page; web+PDF+PNG byte-identical payloads; lifecycle `draft→data_review→content_review→approved→published→superseded/retracted`; drawn programmatically from structured data ONLY — no LLM numbers, no image-generation models; optional LLM phrasing passes the R6 gate; leadership numbers carry **approved violations only**; no consultant names in the general edition | [DECISION owner 2026-08-03, Amendment §7] | Docs 04 (CAP-OPS-08), 09 (month-close), 10 (KPI selection), 11 (render path), 16 (RBAC), 17 (APIs), 18 (SCR-20), 19 (deadlines); doc 24 PB-014; doc 25 VS-05; OD-29/OD-31, OD-10 extended |
+| SD-20 | **The violation-suspicion queue is an early product** — «اشتباه مخالفة» (VS-02): suspected ≠ approved everywhere; `violation_finding` / `review_case` / `review_event` separation, append-only; first vertical type VIOL-008 «التواصل خارج الإطار الرسمي» then one type at a time; review decisions closed to: مخالفة صحيحة / ليست مخالفة / إعادة تصنيف / تحتاج مراجعة ثانية / أدلة غير كافية / إحالة لمالك السياسة — each with closed reason code, reviewer identity, stamps, no overwrite | [DECISION owner 2026-08-03, Amendment §5] | Docs 08 (entity trio), 10 (counting rules), 17 (review APIs), 18 (SCR-08 upgraded); doc 24 PB-006…PB-010; doc 25 VS-02; OD-30/OD-35 |
+| SD-21 | **Backlog governance.** PB-014 (infographic) and the violation-suspicion cluster PB-006…PB-010 are committed to the earliest releases. EVERYTHING ELSE in the backlog — all Wave B/C items and any Wave A item not yet bound to an approved slice — **requires explicit owner consultation and approval before it enters any implementation slice**. The backlog is a standing consultation list, not a work order | [DECISION owner 2026-08-03, Amendment §8 + owner rule] | Doc 24 (owns the rule); docs 21/25 (slice entry), 23 (ticket admission), 00 §6; TRACEABILITY status vocabulary |
+| SD-22 | **Governed detector learning, never online self-learning.** Review labels + missed-case reports + weekly stratified random negatives → versioned immutable datasets → candidate (prompt/model/rules/threshold) → offline eval per category (precision AND estimated recall) → shadow → human adjudication → documented promotion → canary → full deploy with version stamp → monitoring → instant rollback. No reviewer click ever changes production behaviour directly. Consultant names/ratings are never detector features | [DECISION owner 2026-08-03, Amendment §6] | Docs 14 (owns lifecycle), 15 (datasets, EXP-11), 19 (monitoring); doc 24 PB-011; doc 25 VS-04; OD-32/OD-33 |
 
-**Consequence for document authors:** any package text that (a) proposes correcting transcript text, (b) migrates a legacy finding row, (c) prices a Lane-3 job into refusal, (d) merges the three «قطاع» meanings, or (e) renders CAP-C5 as an entity ranking — contradicts a settled decision and fails review (§14 spine).
+*(Reconfirmed with the amendment: SD-17 CPU-only/Groq-only stands; ALL existing invariants I1–I18 and safety gates stay untouched — the amendment's §0.5 no-weakening list maps 1:1 onto I2, I3, I4, I5, I7, I9, I6, the review-first rule, and I15 [DECISION owner 2026-08-03, Amendment §0.5].)*
+
+**Consequence for document authors:** any package text that (a) proposes correcting transcript text, (b) migrates a legacy finding row, (c) prices a Lane-3 job into refusal, (d) merges the three «قطاع» meanings, or (e) renders CAP-C5 as an entity ranking — contradicts a settled decision and fails review (§14 spine). As of 2026-08-04, so does any text that (f) renders a suspected violation as confirmed, or admits suspected cases into a leadership number other than as a separate queue-size figure (SD-19/SD-20), (g) names a release wave "P0/P1/P2" (CON-33 — waves are Wave A/B/C), (h) lets a reviewer decision mutate production detector behaviour directly, or uses consultant names/ratings as detector features (SD-22), or (i) schedules any slice to start without the prior slice's stop-accept approval (SD-18).
 
 ---
 
@@ -403,6 +468,23 @@ Where evidence was insufficient, GF §1.2 requires recording an assumption and c
 | OD-13 | A second Read.ai OAuth client can be issued for the new platform | Token rotates on refresh — sharing breaks both systems [FACT MP §13.8]; issuance lead time unknown | Obtainable but long-lead; **requested at project start**; blocks cutover, not the build (docs 09, 20, 21) |
 
 Two further working assumptions used package-wide, registered under existing ODs rather than new ones: (a) the live-measurement figures in §7 that MP §2 does not itself carry (pressure-class distribution, step-clarity distribution, entity-string distinctness, speaker-role coverage, `service_category` 77.3%) were measured 2026-08-02 by the planning pass and are subject to the same re-measurement discipline [ASSUME OD-07 — re-measured through the committed script once the internal-data contract fixes source access]; (b) no additional internal outcome/follow-up source exists beyond what GF §2.2 lists [ASSUME OD-07].
+
+### 5.1 Assumptions added by the OWNER-AMENDMENT (2026-08-03 → registered 2026-08-04)
+
+Extracted from Amendment §13 (planning assumptions, not final production decisions). Doc 22 §3.2 owns the full register entries (owner, impact, needed-by, revisit trigger); **next free OD becomes OD-36**. PLAN_CHANGELOG §6 carries the full §13 table.
+
+| OD | Assumption extracted from the amendment | Evidence gap that created it | Safe working assumption used by this package |
+|---|---|---|---|
+| OD-28 | Nightly-run start time and completion SLA are schedulable in the approved environment | AMD §4.1 sets a working time, not an operations decision | 02:00 Asia/Riyadh daily, configurable; hourly Read.ai incremental allowed; the nightly run stays authoritative |
+| OD-29 | Approved internal publication channels exist for the infographic | AMD §7.2 names candidates; channel approval is an owner/comms decision | Portal + approved Email; Teams/other channels later, after approval |
+| OD-30 | Review SLA and reviewer staffing/assignment can be committed | AMD §5.2 filters on SLA-overdue; staffing unowned | 7d normal / 2d high-priority; assignment by the review lead |
+| OD-31 | Consultant-name visibility scope in infographic/coaching surfaces | AMD §7.4 masks the general edition; managerial scope open | Masked in the general edition; visible only to direct-manager RBAC per OD-09/OD-14 rules |
+| OD-32 | False-negative sample size/cadence is fixable by experiment | AMD §6.4 mandates the mechanism, not the numbers | Weekly stratified sample of unflagged sessions; size set by EXP-11 |
+| OD-33 | Detector release cadence | AMD §13 offers two rhythms | Monthly or on gate-pass, whichever is LESS frequent |
+| OD-34 | Action Center ownership + closure authority | AMD §11/§13 assign tentatively | Service owner owns actions; leadership sees aggregate status/impact |
+| OD-35 | First violation vertical type | AMD §5.6 proposes VIOL-008; owner may swap | VIOL-008 «التواصل خارج الإطار الرسمي»; swap allowed before the VS-02 build |
+
+Extensions of existing ODs (no new IDs minted): **OD-07** remains the umbrella for the DataHub access mechanism — its text now covers the `SRC-DATAHUB` sub-feed contracts and the daily batch/API assumption [DECISION owner 2026-08-03, Amendment §3; CON-32]; **OD-10** (publication authority) now also covers the infographic's Publication Authority role [Amendment §7.5, §12-22]. New experiment: **EXP-11** — false-negative estimation design (strata, sizes, cadence), owned by docs 15/21/25.
 
 ---
 
@@ -452,5 +534,6 @@ The arch docs' F- and ISS- registers are cited across the package by their origi
 2. **Contradiction hygiene.** The Tier-1 false premises (CON-01…CON-05) are never repeated as fact anywhere in the package — spine rule 13.8.
 3. **Baselines expire.** Every §7 figure is stamped 2026-08-02; the committed measurement script re-stamps them before implementation gates (GF §1.3; doc 23's start gate requires a fresh run).
 4. **Open decisions live in doc 22.** §5's OD mapping is the extraction record; doc 22 carries owners, impacts, and revisit triggers.
+5. **Amendment hygiene (2026-08-04).** The OWNER-AMENDMENT is cited as `[DECISION owner 2026-08-03, Amendment §x]`; its conflicts with pre-amendment text are resolved only here (CON-30…CON-34, §2 Tier 3); SD-18…SD-22 (§4) are the binding record of its decisions; OD-28…OD-35 (§5.1) its assumptions; release waves are written Wave A/B/C, never "P0/P1/P2"; suspected violations are never rendered as confirmed, and leadership numbers use approved-only with queue size as a separate figure.
 
 *End of document 02.*

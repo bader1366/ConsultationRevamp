@@ -77,7 +77,7 @@ Single normalizer, versioned (`norm_v1`), used identically by: the Lane-0 matche
 2. hamza/alef unification: أ إ آ ٱ → ا; ؤ → و contextually preserved for lexicon terms; ئ → ي;
 3. ta-marbuta ة → ه **only for matching keys**, never for display;
 4. alef-maqsura ى → ي;
-5. Arabic-Indic (0-9) and Eastern Arabic (0-9) digits → Western; ٫/٬ → `.`/`,`;
+5. Arabic-Indic (0-9) and Eastern Arabic (0-9) digits → Western; ./٬ → `.`/`,`;
 6. collapse whitespace; strip zero-width chars and directional marks;
 7. lowercase any Latin fragments.
 

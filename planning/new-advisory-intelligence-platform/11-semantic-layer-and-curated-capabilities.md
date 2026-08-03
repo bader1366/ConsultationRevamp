@@ -1,8 +1,9 @@
 # 11 — Semantic Layer and Curated Capabilities
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
 **Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 04 (capability catalogue), 05 (source contracts), 07 (target architecture), 08 (data model), 10 (methodology) · **Feeds:** 12, 13, 15, 17, 18, 23
-**Sources used:** GREENFIELD §8.4–8.5, §11, §13, §23-11; MASTER_PROMPT §5.2, §5.5, §6 (R1–R2, R6, R10), Appendix A; CORE-BRIEF §4–6, §11–13; doc 08 schema names
+**Depends on:** 04 (capability catalogue), 05 (source contracts), 07 (target architecture), 08 (data model), 10 (methodology) · **Feeds:** 12, 13, 15, 17, 18, 23, 24, 25
+**Sources used:** GREENFIELD §8.4–8.5, §11, §13, §23-11; MASTER_PROMPT §5.2, §5.5, §6 (R1–R2, R6, R10), Appendix A; CORE-BRIEF §4–6, §11–13; doc 08 schema names; OWNER AMENDMENT 2026-08-03 §9.3 (VS-07), §12 doc 11 item, §13
+**Amended:** 2026-08-03 — Owner Amendment integrated: VS-07 MVP-five serving set (§8.3, SD-18); operational/review metric registry §8.4 (names exact); `review_state_scope` field + gate G-REG-8 (doc 10 MR-17) [DECISION owner 2026-08-03]
 
 ---
 
@@ -44,6 +45,7 @@ CREATE TABLE ops.registry_snapshot (
 | G-REG-5 | a non-zero `tolerance` lacks a `tolerance_reason` naming the rounding step (R6.3) |
 | G-REG-6 | Lane-0 τ/δ fields changed without a committed recalibration artifact (doc 12 §4) |
 | G-REG-7 | a renderer module contains a bare formatted-number f-string outside `num()/pct()/count()` (R6.2) |
+| G-REG-8 | a violation/review-state metric lacks `review_state_scope`, or a compiled spec mixes `approved_only` and `suspected_queue_only` scopes in one result, or a `suspected_queue_only` metric is placed on a published/leadership surface (doc 10 MR-17) [DECISION owner 2026-08-03 / Amendment §13] |
 
 ---
 
@@ -80,6 +82,7 @@ Every metric is one YAML document. Full field list (all fields required unless m
 | `coverage_formula` | object | `{used, matched, total}` as predicate refs — e.g. total = sessions in period scope, matched = passing filters, used = with the required enrichment present. Drives the envelope `coverage` block (I8). |
 | `exclusion_codes` | array | Closed exclusion reasons this metric can emit, each `{code, label_ar}` — e.g. `{CONSULTANT_UNRESOLVED, "جلسات لم يُحسم مستشارها"}` (doc 08 §4 worked example). |
 | `derivable_from_transcripts` | bool | Feeds doc 12 §3's Lane-3-offer classifier: could a Lane-3 job compute this signal from transcript text if the enriched form is missing? |
+| `review_state_scope` | conditionally required enum `approved_only·suspected_queue_only` | Mandatory for violation/review-state metrics, absent elsewhere (doc 10 MR-17) [DECISION owner 2026-08-03 / Amendment §13]. `approved_only` = computed from review-approved findings; the only scope allowed on published/leadership surfaces. `suspected_queue_only` = workload/queue figures at case grain; never mixed with an approved series in one output (gate G-REG-8). |
 | `tests` | array of golden-suite ids | ≥1 required for `active` status (doc 15). |
 
 ### 2.1 Worked entry — `attendance_rate`
@@ -393,7 +396,7 @@ Envelope rules (testable, doc 15 owns fixtures):
 
 ## 8. Starter metric registry
 
-Floor, not ceiling (R-P1b). ~27 metrics at launch, ported from MASTER_PROMPT Appendix A to the new schema names **plus** the internal-data metrics the legacy platform never had (ratings, evaluations, attendance, follow-up — the GREENFIELD §2.2 class-2 data). All findings-based metrics pin `validated_only=true` and join through `session_extraction_state`; all rates declare denominators per §2. `DP` = default_period, `LCM` = last_closed_month, `ATD` = all_time_declared, `R3M` = rolling_3_months.
+Floor, not ceiling (R-P1b). ~27 metrics at launch, ported from MASTER_PROMPT Appendix A to the new schema names **plus** the internal-data metrics the legacy platform never had (ratings, evaluations, attendance, follow-up — the GREENFIELD §2.2 class-2 data), **plus the seven operational/review metrics of §8.4 added by the 2026-08-03 Owner Amendment**. All findings-based metrics pin `validated_only=true` and join through `session_extraction_state`; all rates declare denominators per §2. `DP` = default_period, `LCM` = last_closed_month, `ATD` = all_time_declared, `R3M` = rolling_3_months.
 
 ### 8.1 Operational and evaluation metrics (internal data — new in NIP)
 
@@ -419,14 +422,14 @@ Floor, not ceiling (R-P1b). ~27 metrics at launch, ported from MASTER_PROMPT App
 |---|---|---|---|---|---|---|---|
 | `clear_steps_rate` | نسبة الجلسات المنتهية بخطوات واضحة | `findings.finding` kind=`step_clarity` | session | rate | sessions with step-clarity extraction | LCM | CAP-B1 headline. `clarity ∈ clear·partial·none`; the null cohort (legacy 1,327) is an exclusion, never a bucket. |
 | `violations_count` | عدد المخالفات | `findings.finding` kind=`violation` | finding | count | — | LCM | Verified + post-dedup only (`dedup_hash`, F1 pin); taxonomy stamp mandatory (I13). |
-| `violations_session_rate` | الجلسات ذات مخالفة لكل ١٠٠ جلسة | same | session | rate | sessions with transcript + extraction | LCM | `COUNT(DISTINCT advisory_session_id)`; per-100-sessions (E.0-1/2). |
+| `violations_session_rate` | الجلسات ذات مخالفة لكل 100 جلسة | same | session | rate | sessions with transcript + extraction | LCM | `COUNT(DISTINCT advisory_session_id)`; per-100-sessions (E.0-1/2). |
 | `challenges_count` | عدد التحديات | `findings.finding` kind=`challenge` | finding | count | — | LCM | Counts by approved CHAL cluster (R-P2), never raw string. |
-| `challenges_session_rate` | الجلسات ذات تحدٍّ لكل ١٠٠ جلسة | same | session | rate | sessions with extraction | LCM | CAP-C1 spec half. |
+| `challenges_session_rate` | الجلسات ذات تحدٍّ لكل 100 جلسة | same | session | rate | sessions with extraction | LCM | CAP-C1 spec half. |
 | `satisfaction_signals_count` | مؤشرات الرضا | `findings.finding` kind=`satisfaction_signal` | finding | count | — | LCM | All three polarities required (CAP-A3: إيجابي/سلبي/محايد). |
 | `impact_level_distribution` | توزيع مستوى الأثر | session-level IMP classification | session | distribution | scored sessions | LCM | Empty enrichment ⇒ `DATA_NOT_ENRICHED` warning, never zeros. |
 | `government_mentions_count` | ذكر الجهات الحكومية | `findings.finding` kind=`government_mention` | mention | count | — | R3M | Reported as *mentions extracted*, never as an assessment of the entity (CAP-C5 wording rule); child-table count only (legacy denormalized-counter lesson). |
-| `government_friction_session_rate` | جلسات احتكاك حكومي لكل ١٠٠ جلسة | same, `is_friction=true` | session | rate | sessions with extraction | R3M | Extraction-only framing; entity resolution via `tax.entity_alias` (4,372 raw strings → canonical [FACT CORE-BRIEF §11]). |
-| `pressure_signal_rate` | مؤشرات الضغط لكل ١٠٠ جلسة | `findings.finding` kind=`pressure_signal` | session | rate | sessions with extraction | LCM | Severe class imbalance (urgency 8,832 vs distress 544) ⇒ per-class suppression bites; never rank classes by raw count without the base (E.0-3). |
+| `government_friction_session_rate` | جلسات احتكاك حكومي لكل 100 جلسة | same, `is_friction=true` | session | rate | sessions with extraction | R3M | Extraction-only framing; entity resolution via `tax.entity_alias` (4,372 raw strings → canonical [FACT CORE-BRIEF §11]). |
+| `pressure_signal_rate` | مؤشرات الضغط لكل 100 جلسة | `findings.finding` kind=`pressure_signal` | session | rate | sessions with extraction | LCM | Severe class imbalance (urgency 8,832 vs distress 544) ⇒ per-class suppression bites; never rank classes by raw count without the base (E.0-3). |
 | `decision_points_count` | نقاط القرار | `findings.finding` kind=`decision_point` | finding | count | — | LCM | Hesitation = DEC-cluster recurrence (CAP-C8), not raw counts. |
 | `repeated_question_cluster_count` | عناقيد الأسئلة المتكررة | `findings.cluster` (`QST-…`, approved) | cluster | count | — | R3M | CAP-B3/C6 shared engine; approved labels only (ADR-0012). |
 | `consultant_talk_share` | نسبة كلام المستشار | `transcript.turn` via `active_transcript` | session | avg | sessions with active transcript | LCM | **Interval-merged** speaking time — the legacy `silence_pct` overlap bug is structurally fixed by doc 08's `total_speech_ms` interval-merge; cross-talk caveat still printed. |
@@ -435,6 +438,36 @@ Floor, not ceiling (R-P1b). ~27 metrics at launch, ported from MASTER_PROMPT App
 | `time_loss_minutes_avg` | متوسط الدقائق المفقودة | `findings.finding` kind=`time_loss_span` | session | avg | sessions with extraction | LCM | CAP-B2 spec companion; loss classes are curated judgement (§9). |
 
 **Dimension applicability** is per-metric (`allowed_dimensions`); the compiler rejects e.g. `speaker_role` on `attendance_rate` with the standard hard-fail. The three-way «قطاع» note of §3 applies to every metric here: `service_category` and `government_entity` are registered and available, `business_sector` is registered and UNAVAILABLE.
+
+### 8.3 VS-07 MVP serving set — the first five governed capabilities
+
+[DECISION owner 2026-08-03 / Amendment §9.3 VS-07; SD-18] **The first usable product does NOT require all 26 committed capabilities.** SD-18 re-plans delivery as vertical slices with a mandatory stop-and-accept after each; the semantic layer's first governed, owner-testable serving set is exactly **five**, chosen for direct value and realistic data coverage. The remaining catalogue follows slice-by-slice under SD-21's consultation rule (docs 04 §11.5, 21, 24, 25) — building the full catalogue before a working product is the horizontal-delivery failure the amendment corrects.
+
+| # | VS-07 capability (Amendment §9.3 wording) | Served through | Registry objects |
+|---|---|---|---|
+| 1 | عدد الجلسات وحالاتها حسب الفترة والبرنامج | `metric_query` | `sessions_count` × dimensions `session_status`, `programme`, `month` |
+| 2 | تقييم المستفيد: المتوسط والتوزيع | `metric_query` | `beneficiary_rating_avg`, `beneficiary_rating_distribution` (+ the `rating_response_rate` selection-bias caveat rendered verbatim) |
+| 3 | نسبة الخطوات الواضحة | CAP-B1 (spec half) | `clear_steps_rate` — the MR-10 label-validation gate applies before publication |
+| 4 | حالات المخالفات المشتبه/المعتمدة وحالة المراجعة | approved-only series + separate queue figures | `violations_count` / `violations_session_rate` (scope `approved_only`, MR-17) beside `suspected_cases_open` + `review_backlog_age` (scope `suspected_queue_only`, §8.4) — never one merged series (T-19, doc 15) |
+| 5 | أبرز التحديات أو الأسئلة المتكررة | CAP-C1 / CAP-B3 minimal read | `challenges_session_rate` + approved QST/CHAL clusters — gated on the **first owner-approved semantic artifact** (an R-P2 cluster run whose canonical labels the owner has named/approved through the review loop); until that approval exists the capability answers `DATA_NOT_ENRICHED`, never a read over unapproved clusters |
+
+Rules for the set: the five ship with signed answer keys (doc 15 DS-03) before any L2 exposure; **L1 owner previews run earlier on fixture/staging data — EXP-09/EXP-10 and the production gates guard L2/L3 only, never L1 previews (SD-18)**; item 4's rendering obeys MR-17 end-to-end. This set is the acceptance surface of slice VS-07 (doc 25 owns the checklist; doc 15 §4 maps the suite tiers).
+
+### 8.4 Operational and review metrics (Owner Amendment — names exact)
+
+[DECISION owner 2026-08-03 / Amendment §12 doc 11 item] Seven operational/review metrics are registered with the same YAML discipline as §2 — same meta-schema, same CI gates, same envelope. They are **ops-class**: workload/health measures, not per-100-session analytics; their `unit`/`comparison_safe` marks keep them off analytical comparison axes, and MR-17 scope marks keep suspected volume out of published violation series (G-REG-8). Two registry consequences elsewhere: the existing `violations_count` / `violations_session_rate` entries gain `review_state_scope: approved_only`; and the amendment's shorthand `join_rate` is registered under its exact package name `source_join_rate`. Base tables are the doc 08 amendment entities ([REC] schema placement below follows CORE-BRIEF §6 — `ops` for run/audit/action/detector state, `findings` for review cases, `ingest` for reconciliation; doc 08 owns final DDL and may move a table, in which case the registry entry updates in the same change set).
+
+| Metric id | Arabic label | Base (doc 08) | Grain | Agg | Denominator | DP | Key caveat |
+|---|---|---|---|---|---|---|---|
+| `nightly_run_success` | نجاح التشغيل الليلي في موعده | `ops.pipeline_run` | run | rate | scheduled nightly runs in window | rolling_3_months | Success = terminal `succeeded` before the completion deadline [ASSUME OD-28: start 02:00 Asia/Riyadh, configurable; deadline SLA part of OD-28]. A `partial` run is NOT success for this metric even though serving continues on unaffected feeds. Run states exact: `queued → running → partial → succeeded → failed → cancelled → superseded`. Feeds QT-15 (doc 15) and doc 19 SLOs. |
+| `data_completeness` | اكتمال بيانات الفترة | `ops.data_quality_observation` + `core.advisory_session` terminal-state facts | session | share | expected sessions in period (DataHub-authoritative count, SRC-DATAHUB-SESSION) | last_closed_month | Month-close gate: ≥98% required before the infographic draft (MR-20) [ASSUME OD-28 — Amendment §13 working assumption]; always rendered with the per-sub-feed breakdown (SRC-DATAHUB family, doc 05) — never only a blended figure. |
+| `source_join_rate` | نسبة ربط المصادر | `ingest.reconciliation_result` | session | rate | sessions eligible for the join direction | last_closed_month | **Two directions, registered separately and never merged:** provider→DataHub matched share and DataHub-session→transcript share (Amendment §3.3). Unmatched flow to the reconciliation queue (CAP-D9 / SCR-14). |
+| `review_backlog_age` | عمر قائمة مراجعة الاشتباه | `findings.review_case` (open states) | case | distribution (p50/p90 + overdue share) | open review cases | last_closed_month | Workload metric at case grain — never a violation rate (MR-17). SLA thresholds 7d normal / 2d high-priority [ASSUME OD-30]; overdue share feeds QT-14 (doc 15) + doc 19 alerts. |
+| `suspected_cases_open` | حالات الاشتباه المفتوحة | `findings.review_case` | case | count | — (point-in-time queue size) | last_closed_month | `review_state_scope: suspected_queue_only` — queue-size figure only; refused on published/leadership violation axes (MR-17, G-REG-8, T-19); renders with review-state vocabulary and the fixed «اشتباه مخالفة» disclaimer, never as «مخالفات». |
+| `detector_acceptance_rate` | نسبة قبول قرارات الكاشف | `findings.review_event` × `ops.detector_release` stamps | decided case | rate | decided cases per category × detector version | last_closed_month | Always per category × release version — a blended acceptance figure is banned in release evaluation (doc 15 §6.6). A monitored drop triggers SD-22 review/rollback consideration, **never** an automatic model change. |
+| `action_completion_rate` | نسبة إتمام الإجراءات | `ops.service_improvement_action` | action | rate | actions due in window | last_closed_month | Execution measure only; impact readings are MR-19 association-only (baseline → intervention → follow-up, no causal claims). Ownership/closure authority [ASSUME OD-34: service owner owns; leadership sees aggregates]. |
+
+Queue metrics (`review_backlog_age`, `suspected_cases_open`) are additionally readable as an **as-of snapshot** (the queue as it stands now): the snapshot read is stamped `as_of`, carries no period comparison, and is the form CAP-OPS-02 (مركز تشغيل البيانات) and the morning digest use; historical series bind `period_column` to the case-opened date. All seven surface on the OPS screens (doc 04 §11.4), alert in doc 19, and are governed by I12 — an ops number on any screen that is not one of these registered ids fails the build.
 
 ---
 

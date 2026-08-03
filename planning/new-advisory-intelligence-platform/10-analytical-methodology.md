@@ -1,17 +1,18 @@
 # 10 — Analytical Methodology (Method Charter)
 **Platform:** Nwafeth Intelligence — منصة نوافث لذكاء الجلسات الاستشارية (Monsha'at Advisory Session Intelligence Platform)
 **Status:** Draft for owner review · **Date:** 2026-08-02 · **Author:** Planning package (Fable 5)
-**Depends on:** 04 (capability catalogue), 05 (source contracts), 08 (data model) · **Feeds:** 11 (semantic layer), 12 (serving), 13 (Lane 3), 15 (evaluation), 18 (review UX), 20 (parallel run), 21 (roadmap), 22 (ADR/OD register)
-**Sources used:** GREENFIELD §2.5, §5 (full question texts), §6.1–6.3, §12 (full), §21, §23; MASTER_PROMPT §4.4, Appendix A, Appendix C, Appendix E (E.0–E.15, full); CORE-BRIEF §§3–13; arch docs as current-state evidence only
+**Depends on:** 04 (capability catalogue), 05 (source contracts), 08 (data model) · **Feeds:** 11 (semantic layer), 12 (serving), 13 (Lane 3), 15 (evaluation), 18 (review UX), 20 (parallel run), 21 (roadmap), 22 (ADR/OD register), 24, 25
+**Sources used:** GREENFIELD §2.5, §5 (full question texts), §6.1–6.3, §12 (full), §21, §23; MASTER_PROMPT §4.4, Appendix A, Appendix C, Appendix E (E.0–E.15, full); CORE-BRIEF §§3–13; arch docs as current-state evidence only; OWNER AMENDMENT 2026-08-03 §5–§7, §11, §12 doc 10 item, §13
+**Amended:** 2026-08-03 — Owner Amendment integrated: method rules MR-17 (suspected/approved separation), MR-18 (false-negative estimation), MR-19 (action impact tracking), MR-20 (infographic KPI selection & suppression) added; constants and enforcement map extended [DECISION owner 2026-08-03]
 
 ---
 
 This is the **method charter** of the platform: the normative statistical and analytical rules every capability obeys, the per-capability method for all 26 committed capabilities (CAP-A1…CAP-D10), the causality-wording doctrine, the semantic-clustering methodology, the coverage-block contract, and the statistical appendix. Doc 04 says *what* each capability promises; this document says *how the numbers are made and when they may be shown*. A capability whose implementation contradicts this charter is wrong even if its tests pass.
 
-Normative keywords: **MUST / MUST NOT / SHOULD** in the RFC-2119 sense. Rules carry IDs **MR-01…MR-16** and are cited by ID from docs 11, 12, 13, 15 and from the capability registry itself.
+Normative keywords: **MUST / MUST NOT / SHOULD** in the RFC-2119 sense. Rules carry IDs **MR-01…MR-20** (MR-17…MR-20 added by the 2026-08-03 Owner Amendment) and are cited by ID from docs 11, 12, 13, 15 and from the capability registry itself.
 
 **Contents**
-- §1 Method charter — MR-01…MR-16 with enforcement points
+- §1 Method charter — MR-01…MR-20 with enforcement points
 - §2 Question-class taxonomy and error-cost assignment
 - §3 Per-capability methods — CAP-A1…CAP-C8 (deep), CAP-D1…CAP-D10
 - §4 Stated-cause vs inferred-cause doctrine and Arabic labelling rules
@@ -23,15 +24,15 @@ Normative keywords: **MUST / MUST NOT / SHOULD** in the RFC-2119 sense. Rules ca
 
 ---
 
-## 1. Method charter — MR-01…MR-16
+## 1. Method charter — MR-01…MR-20
 
-These rules restate MASTER_PROMPT E.0's ten rules as platform-wide normative rules [DECISION MASTER_PROMPT E.0, carried forward per GREENFIELD §12], extended with four rules GREENFIELD §12.2 requires that E.0 did not spell out (multiple-comparison correction, composition checks, left-censoring, coverage-as-answer) and two engineering rules that make the charter enforceable rather than aspirational. Violating these produces answers that are **confidently wrong**, which in a government compliance context is worse than no answer [FACT MASTER_PROMPT E.0].
+These rules restate MASTER_PROMPT E.0's ten rules as platform-wide normative rules [DECISION MASTER_PROMPT E.0, carried forward per GREENFIELD §12], extended with four rules GREENFIELD §12.2 requires that E.0 did not spell out (multiple-comparison correction, composition checks, left-censoring, coverage-as-answer) and two engineering rules that make the charter enforceable rather than aspirational. The 2026-08-03 Owner Amendment adds four operational-product rules — MR-17 suspected/approved separation, MR-18 false-negative estimation, MR-19 action impact tracking, MR-20 infographic KPI selection & suppression [DECISION owner 2026-08-03 / Amendment §12 doc 10 item]. Violating these produces answers that are **confidently wrong**, which in a government compliance context is worse than no answer [FACT MASTER_PROMPT E.0].
 
 Each rule states: the rule, why, the **enforcement point** (the structural mechanism that makes violation unbuildable or unpublishable — a lesson from the legacy system, where method rules lived in review comments and died there), and a worked example where useful.
 
 ### MR-01 — Rates per 100 sessions, never bare counts, for any comparison
 
-Monthly session volume swings **2.7×** across the measured corpus (556 sessions in 2025-08 → 1,512 in 2025-12) [FACT CORE-BRIEF §11]. Any month-over-month comparison of raw counts measures the calendar, not behaviour. Every comparative statement MUST be a rate per 100 sessions **with its denominator printed**: «١٢٫٤ لكل ١٠٠ جلسة (من أصل ١٬٢٠٤ جلسات)». Raw counts remain reportable as *levels* («كم مخالفة سُجّلت؟») but MUST NOT appear in a trend, ranking-across-periods, or programme-comparison claim without the rate beside them.
+Monthly session volume swings **2.7×** across the measured corpus (556 sessions in 2025-08 → 1,512 in 2025-12) [FACT CORE-BRIEF §11]. Any month-over-month comparison of raw counts measures the calendar, not behaviour. Every comparative statement MUST be a rate per 100 sessions **with its denominator printed**: «12.4 لكل 100 جلسة (من أصل 1٬204 جلسات)». Raw counts remain reportable as *levels* («كم مخالفة سُجّلت؟») but MUST NOT appear in a trend, ranking-across-periods, or programme-comparison claim without the rate beside them.
 
 *Enforcement:* the metric registry (doc 11) marks every metric `comparison_safe: rate_only | count_ok`; the compiler refuses to place a `count`-granularity metric on a period-comparison or cross-programme axis. The deterministic verifier (I3/I18) checks that any rendered percentage-change claim references a rate-typed result.
 
@@ -43,19 +44,19 @@ One session can carry 12 violations, 9 challenges, 30 satisfaction signals [FACT
 
 ### MR-03 — Every top-N carries its base
 
-"Top 10 challenges" without "out of N sessions in the window, M of which had ≥1 challenge extracted" is a leaderboard, not an analysis [FACT MASTER_PROMPT E.0-3]. Every ranked answer MUST render the base line: «أعلى ١٠ تحديات — من أصل ١٬٢٠٤ جلسات في الفترة، ٨٦٢ منها استُخرج فيها تحدٍ واحد على الأقل».
+"Top 10 challenges" without "out of N sessions in the window, M of which had ≥1 challenge extracted" is a leaderboard, not an analysis [FACT MASTER_PROMPT E.0-3]. Every ranked answer MUST render the base line: «أعلى 10 تحديات — من أصل 1٬204 جلسات في الفترة، 862 منها استُخرج فيها تحدٍ واحد على الأقل».
 
 *Enforcement:* the `RankedList` result type in the answer envelope (doc 11) has non-optional fields `population_n`, `population_with_signal_n`; a renderer receiving a ranked list without them is a type error, not a style bug.
 
 ### MR-04 — Minimum cell size n ≥ 30, with visible suppression
 
-Below `MIN_CELL_N = 30` sessions per cell, report the count but **suppress the rate/percentage and mark the cell** («أقل من الحد الأدنى للعرض؛ العدد: ١٧») [DECISION MASTER_PROMPT E.0-4; precedent `_MIN_MEETINGS = 30` in the legacy `clear_steps_by_sector`]. Suppression is visible, never silent removal — a dropped row reads as "does not exist", which is a different (false) claim. Suppressed cells still count toward totals and coverage.
+Below `MIN_CELL_N = 30` sessions per cell, report the count but **suppress the rate/percentage and mark the cell** («أقل من الحد الأدنى للعرض؛ العدد: 17») [DECISION MASTER_PROMPT E.0-4; precedent `_MIN_MEETINGS = 30` in the legacy `clear_steps_by_sector`]. Suppression is visible, never silent removal — a dropped row reads as "does not exist", which is a different (false) claim. Suppressed cells still count toward totals and coverage.
 
 *Enforcement:* `MIN_CELL_N` is one shared constant in the analytical-constants registry (MR-16), applied by the semantic-layer post-processor — **not** re-implemented per capability (the legacy per-handler-literal failure). Golden tests include at least one suppressed-cell fixture per segmented capability (doc 15).
 
 ### MR-05 — Wilson 95% intervals on every published proportion
 
-A 40% clear-steps rate on n=31 and on n=1,400 are different claims; stakeholders treat them identically unless the interval is shown [FACT MASTER_PROMPT E.0-5]. Every proportion MUST carry a Wilson score interval at `CI_LEVEL = 0.95` (formula §7.1). Rendering: «٤٠٪ (فاصل ثقة ٩٥٪: ٣٤–٤٦٪)». Intervals are computed deterministically by the semantic layer, never by a model (I3).
+A 40% clear-steps rate on n=31 and on n=1,400 are different claims; stakeholders treat them identically unless the interval is shown [FACT MASTER_PROMPT E.0-5]. Every proportion MUST carry a Wilson score interval at `CI_LEVEL = 0.95` (formula §7.1). Rendering: «40% (فاصل ثقة 95%: 34–46%)». Intervals are computed deterministically by the semantic layer, never by a model (I3).
 
 *Enforcement:* the `Proportion` result type carries `{p, n, ci_low, ci_high, method: "wilson95"}`; the composer's numeric provenance gate (R6) admits `ci_low/ci_high` into allowed literals, so a narrative cannot state a proportion without also being able to state its interval.
 
@@ -101,7 +102,7 @@ Any analysis that tests many hypotheses (phrase families in contrastive lift, do
 
 ### MR-12 — Composition-change checks on every period comparison
 
-A rate can move because behaviour changed or because the mix of sessions changed (new programme cohort, consultant turnover, ingestion backlog landing mid-window) [FACT MASTER_PROMPT E.10]. Every period-over-period claim MUST run a composition check: compare the distribution of sessions over `window_name`, `service_category`, and consultant cohort between the two windows; if total variation distance > `COMPOSITION_TVD_MAX = 0.10` on any axis (or consultant-cohort turnover > 20%), the answer MUST carry the composition caveat and report whether the trend survives stratification on the shifted axis: «تنبيه: تغيّر مزيج البرامج بين الفترتين (٣٢٪→٤٥٪ لبرنامج إرشاد)؛ الاتجاه بعد التثبيت على البرنامج: …» [REC — TVD chosen for interpretability as "share of sessions that would need to move"; alternative Jensen–Shannon divergence, rejected as unexplainable to a stakeholder; revisit-trigger: TVD flagging >50% of comparisons, then tune threshold].
+A rate can move because behaviour changed or because the mix of sessions changed (new programme cohort, consultant turnover, ingestion backlog landing mid-window) [FACT MASTER_PROMPT E.10]. Every period-over-period claim MUST run a composition check: compare the distribution of sessions over `window_name`, `service_category`, and consultant cohort between the two windows; if total variation distance > `COMPOSITION_TVD_MAX = 0.10` on any axis (or consultant-cohort turnover > 20%), the answer MUST carry the composition caveat and report whether the trend survives stratification on the shifted axis: «تنبيه: تغيّر مزيج البرامج بين الفترتين (32%→45% لبرنامج إرشاد)؛ الاتجاه بعد التثبيت على البرنامج: …» [REC — TVD chosen for interpretability as "share of sessions that would need to move"; alternative Jensen–Shannon divergence, rejected as unexplainable to a stakeholder; revisit-trigger: TVD flagging >50% of comparisons, then tune threshold].
 
 *Enforcement:* composition check is computed inside the trend engine (CAP-C3 shared code), not per capability; its result is a required field of the `PeriodComparison` envelope.
 
@@ -142,8 +143,59 @@ Every threshold in this charter is a **named constant in one registry** (`ops`-o
 | `DISPERSION_FIXED_MAX` / `DISPERSION_INCONSISTENT_MIN` | corpus quartiles at calibration (§3.6) | calibrated | B3/C6 |
 | `MIN_CLUSTER_OCCURRENCES` | 10 sessions | tunable [REC] | B3/C6/C8 cluster reporting |
 | `STALE_MIX_TURNOVER_MAX` | 20% consultant-cohort turnover | tunable [REC] | MR-12 |
+| `MONTH_COMPLETENESS_GATE` | 0.98 (sessions in terminal states) | assumed [ASSUME OD-28 — Amendment §13 working assumption] | MR-20, CAP-OPS-08 draft trigger |
+| `REVIEW_SLA_NORMAL_D` / `REVIEW_SLA_HIGH_D` | 7 d / 2 d | assumed [ASSUME OD-30] | MR-17 queue reporting; QT-14 (doc 15) |
+| `FN_WEEKLY_SAMPLE_N` | set by EXP-11 (weekly stratified sample of unflagged sessions) | calibrated [ASSUME OD-32] | MR-18 / DS-14 (doc 15) |
+| `ACTION_BASELINE_MONTHS` / `ACTION_FOLLOWUP_MONTHS` | 1 closed month each, matched lengths | tunable [REC] | MR-19 |
 
 *Enforcement:* an import-lint rule bans numeric literals in analytical modules for any quantity whose name exists in the registry; golden fixtures reference constants by name so a re-calibration re-runs the affected suite.
+
+### MR-17 — Suspected and approved violations are separate populations; never mixed
+
+[DECISION owner 2026-08-03 / Amendment §5, §7.4, §13; SD-20] **Definitions.** A **suspected** violation is a `violation_finding` attached to a `review_case` that has not reached the approved state (every state before and other than an approving decision — new, in review, second review, أدلة غير كافية, إحالة لمالك السياسة). An **approved** violation is one whose case carries an append-only `review_event` with the decision «مخالفة صحيحة» by an authorized reviewer, with closed reason code, reviewer identity, and text/detector/taxonomy stamps. «ليست مخالفة» removes the finding from both populations; «إعادة تصنيف» re-enters it as *suspected* under the new category — reclassification never transfers approval.
+
+**Denominators.** Published violation rates — packs, dashboards, the monthly infographic, leadership surfaces, CAP-B5's ranked series, CAP-D5's violation axis — MUST be computed from **approved findings only**, per 100 sessions with the session denominator printed (MR-01/MR-02 unchanged). Suspected volume is a **workload measure over cases, not a violation measure over sessions**: it is reported only through the queue metrics `suspected_cases_open` (open-case count) and `review_backlog_age` (age distribution of open cases), each at case grain with its own stated base (doc 11 §8.4).
+
+**Never mixing.** No series, table, chart, or delta may combine suspected and approved counts. A leadership surface MAY show the queue size as its own separate figure beside the approved figure, labelled «حجم قائمة الاشتباه» — never summed, never trended together. Trend claims on approved counts that cross a review-throughput change MUST carry a composition caveat (a draining backlog looks like a violation spike — MR-12 logic applied to review state).
+
+**Queue-size reporting.** Queue figures render in review-state vocabulary only («حالات قيد المراجعة», «متأخرة عن اتفاقية مستوى الخدمة» [ASSUME OD-30: 7d normal / 2d high-priority]) together with the fixed disclaimer of the «اشتباه مخالفة» surface; the word «مخالفة» unqualified is banned on suspected rows (§4.3 lint list extended).
+
+*Enforcement:* every violation/review metric in the registry carries `review_state_scope ∈ {approved_only, suspected_queue_only}` (doc 11 §2/§8.4, gate G-REG-8); the compiler refuses a spec mixing scopes or placing a `suspected_queue_only` metric on a published/leadership surface; renderer lint bans confirmed wording on non-approved cases; doc 15 T-19 pins the rule end-to-end.
+
+### MR-18 — Estimated recall via weekly stratified sampling of unflagged sessions
+
+[DECISION owner 2026-08-03 / Amendment §6.4] Reviewing only detector-flagged cases measures precision and is structurally blind to what detection missed; a published "accuracy" derived from flagged-only review is forbidden — it is the false-high-precision failure the amendment names. Every violation category with a live detector MUST carry an **estimated recall**, produced as follows:
+
+1. **Weekly stratified random sample of unflagged sessions** (no detector fired) sent to light human review [ASSUME OD-32: weekly cadence; size set by EXP-11]. Strata — Amendment §6.4 verbatim: **programme; consultant; session duration; session month; transcript quality; under-represented categories** (boosted allocation). Each weekly manifest is immutable and versioned (SD-22 dataset discipline); found cases enter the normal review queue as suspected cases (they are production findings too — MR-17 states apply).
+2. **Design-weighted estimation, per category, with CIs.** Estimated recall per category = approved detections ÷ (approved detections + design-weighted missed cases found in sampling), reported **per category with a confidence interval** (Wilson on the effective sample size; bootstrap when stratum weights are unequal) — never one aggregate recall number (doc 15 §6.6 makes the blended-total row structurally impossible in release reports).
+3. **Missed-case reports are a complement, never the instrument.** Reviewer-initiated reports («إضافة اشتباه لم يرصده النظام», DS-13) feed the estimate only as an attention-biased **sensitivity lower bound**; they never replace random sampling.
+4. **EXP-11 owns the sizing** (sample sizes, stratum allocation, cadence; doc 15 §2). QT-13 (doc 15) sets the per-category floor; a floor breach blocks detector-release promotion, but never unpublishes precision-gated approved cases.
+
+*Enforcement:* one shared design-weighted estimator reads DS-14 manifests; no code path computes "recall" from flagged-case review alone; release-evaluation templates carry per-category rows only.
+
+### MR-19 — Action impact tracking is association-only
+
+[DECISION owner 2026-08-03 / Amendment §2.4, §8.3 PB-120; extends MR-15] Every service-improvement action (CAP-OPS-09) that claims measurable intent declares at creation: the **target metric** (registered id), the **scope** (programme/consultant cohort/category), a **baseline window** (≥ `ACTION_BASELINE_MONTHS` closed month(s) ending before the intervention), the **intervention marker** (action completion date with its completion evidence), and a **follow-up window** (matched length, starting after completion) [REC — matched closed-month windows; alternative: cumulative post-period, rejected as trend-confounded; revisit-trigger: owner needs faster reads, then add an interim indicator clearly marked غير محسوم].
+
+The post-action reading renders baseline vs follow-up with a CI on the difference and MUST use association wording: «تغيّر المؤشر بعد الإجراء» — never «بسبب الإجراء»; the MR-15/§4 causal-claim ban applies verbatim («دون ادعاء سببية غير مثبتة»). **Confound notes are mandatory on every reading:** composition change across the boundary (MR-12), overlapping actions on the same scope (listed by id), detector/taxonomy/label version changes inside either window (MR-13 censoring), and seasonal volume swing (MR-01 rates only). `action_completion_rate` measures execution; metric movement measures association; the platform states both and claims neither as proof. A genuinely causal evaluation remains the §4.2-3 research escape hatch — separately approved methodology, never merged into operational reporting.
+
+*Enforcement:* the action-impact envelope has required fields `{target_metric, scope, baseline, followup, confounds[]}`; an action without a registered target metric renders status only (no impact panel); §4.3's banned-phrase lint gains «نتيجة للإجراء», «أثبت الإجراء» as system claims.
+
+### MR-20 — Infographic KPI selection and suppression
+
+[DECISION owner 2026-08-03 / Amendment §7; SD-19] The monthly leadership infographic (CAP-OPS-08, «نبض خدمة الاستشارات والإرشاد — ملخص الشهر») is one page built around what the leader needs, not everything the platform owns. **Selection criteria — all required for a KPI to appear:**
+
+1. **Leader-relevant / decision-linked:** it serves one of Amendment §7.4's five fixed parts (نبض الخدمة، جودة وأثر الجلسات، صوت المستفيد، الجودة والالتزام، ما يحتاج قرارًا) — the parts are the frame; KPIs compete for slots inside them.
+2. **Registered and governed:** every number is a Metric Result from the registry with drill-down to its session set (I3/I12; no bespoke infographic arithmetic; no LLM-computed numbers).
+3. **Stable definition:** the metric definition and taxonomy version are unchanged across the compared windows, or the change is stated on the face (MR-13).
+4. **Coverage-fit:** the month passes the completeness gate — ≥ `MONTH_COMPLETENESS_GATE` (98%) of sessions in terminal states [ASSUME OD-28 — Amendment §13 working assumption]; any owner-documented override renders **on the face of the infographic**, never in a footnote elsewhere.
+5. **Validated labels:** MR-10 unlocks apply — a KPI on an unvalidated label family may not appear.
+
+**Suppression and review-state rules carried through, not relaxed for layout:** MR-04's n ≥ 30 suppression renders as suppression inside the infographic (editorial un-suppression forbidden); the violations part shows **approved-only** figures with the queue size as its separate figure (MR-17); no consultant names in the general edition [ASSUME OD-31 — masked; direct-manager visibility rides OD-09/OD-14 RBAC].
+
+**Month-over-month comparison rules:** closed months only, end-exclusive; rates per 100 sessions (MR-01) with denominators in the footer; comparison against the immediately preceding closed month (plus an owner-fixed reference window if approved); MR-12 composition caveat and MR-13 censoring apply; a KPI whose comparison month is censored, suppressed, or below support renders «غير قابل للمقارنة» — never a delta computed anyway.
+
+*Enforcement:* the infographic composes exclusively from pack-grade Metric Results (I11; R6 allowed-literals; optional LLM phrasing passes the R6 gate); the draft job refuses to run before the completeness gate or a recorded override (Amendment §4.4-5: no official artifact from an incomplete run without a face-visible override); template KPI slots bind to registry ids so an unregistered number cannot be typeset (I12); tri-format payload parity is pinned by doc 15 T-18.
 
 ### 1.1 Enforcement map (summary)
 
@@ -160,6 +212,10 @@ Every threshold in this charter is a **named constant in one registry** (`ops`-o
 | MR-14 | harness-computed coverage; asserted identity | raises (bug), never ships silently |
 | MR-15 | renderer wording contract + banned-phrase lint (§4) | render-contract test fails |
 | MR-16 | constants registry + literal lint | build fails |
+| MR-17 | registry `review_state_scope` (G-REG-8, doc 11) + compiler scope check + renderer lint | mixed-state spec refuses to compile; doc 15 T-19 red |
+| MR-18 | single design-weighted estimator over DS-14 manifests; per-category-only report template | no flagged-only recall path exists; release evaluation fails to file |
+| MR-19 | action-impact envelope required fields + association-wording lint | impact panel not rendered; render-contract test fails |
+| MR-20 | completeness-gate check before draft; KPI slots bound to registry ids; T-18 parity | draft job refuses; build fails on unregistered slot |
 
 ---
 
@@ -254,15 +310,15 @@ Class: measurement. Headline metric of the whole product [FACT MASTER_PROMPT E.4
 
 **Method.** Numerator: sessions whose current `step_clarity` finding = `clear`. Denominator: sessions in window with non-null clarity; null-clarity sessions are the named exclusion `label_missing` (legacy baseline 1,327 — declared, never silently dropped). Splits: `service_category`, canonical CHAL category, `government_entity`, programme, and other approved dimensions — **every split labelled with which meaning of «قطاع» it uses** (the legacy `clear_steps_by_sector` said "sector" and grouped by government entity; that class of quiet mismatch is banned by the three-dimension rule [FACT CORE-BRIEF §13.3]). Wilson CI; MR-04 suppression; two-proportion test on month-over-month deltas; MR-12 composition check.
 
-**Non-negotiable:** strongest validation in the platform — this is the number most likely to be quoted in a slide. MR-10 with 100 sessions **per category value** (clear/partial/none), agreement published beside the rate: «نسبة الخطوات الواضحة ٤٨٪ (ثقة ٩٥٪: ٤٥–٥١٪) — دقة التصنيف المُتحقّق منها: κ=٠٫٧٨». A 62% rate means nothing if the label is 60% accurate. **Cadence:** monthly.
+**Non-negotiable:** strongest validation in the platform — this is the number most likely to be quoted in a slide. MR-10 with 100 sessions **per category value** (clear/partial/none), agreement published beside the rate: «نسبة الخطوات الواضحة 48% (ثقة 95%: 45–51%) — دقة التصنيف المُتحقّق منها: κ=0.78». A 62% rate means nothing if the label is 60% accurate. **Cadence:** monthly.
 
 **Worked rendered answer (the golden-fixture shape for every measurement capability):**
 
-> **نسبة الجلسات المنتهية بخطوات واضحة — يوليو ٢٠٢٦**
-> **٤٨٫٢٪** (فاصل ثقة ٩٥٪: ٤٥٫٣–٥١٫١٪) — ٥٥٤ من أصل ١٬١٥٠ جلسة مُقيَّمة
-> مقارنة بيونيو ٢٠٢٦: ٤٥٫١٪ → **+٣٫١ نقطة** (الفرق غير ذي دلالة إحصائية عند ٠٫٠٥؛ p=٠٫١٤)
-> **التغطية:** استُخدمت ١٬١٥٠ من ١٬٢٤٠ جلسة مطابقة (من إجمالي ١٦٬٩١١) — مستبعد: ٤١ بلا نص، ٢٢ أدوار متحدثين غير محسومة، ٢٧ تصنيف غير متوفر
-> **حدود القياس:** دقة تصنيف «خطوات واضحة» المتحقق منها بشرياً: κ=٠٫٧٨ (اتفاق ٨٩٪ على عينة ٣٠٠ جلسة، ٢٠٢٦-٠٦)
+> **نسبة الجلسات المنتهية بخطوات واضحة — يوليو 2026**
+> **48.2%** (فاصل ثقة 95%: 45.3–51.1%) — 554 من أصل 1٬150 جلسة مُقيَّمة
+> مقارنة بيونيو 2026: 45.1% → **+3.1 نقطة** (الفرق غير ذي دلالة إحصائية عند 0.05؛ p=0.14)
+> **التغطية:** استُخدمت 1٬150 من 1٬240 جلسة مطابقة (من إجمالي 16٬911) — مستبعد: 41 بلا نص، 22 أدوار متحدثين غير محسومة، 27 تصنيف غير متوفر
+> **حدود القياس:** دقة تصنيف «خطوات واضحة» المتحقق منها بشرياً: κ=0.78 (اتفاق 89% على عينة 300 جلسة، 2026-06)
 
 Every element above is typed envelope output (I11): the number, interval, denominator, comparison verdict, coverage line, and validation caveat are separate fields; the renderer composes them; no model wrote any of them.
 
@@ -337,7 +393,7 @@ Class: measurement over reviewed accusation data. For each of the 8 types + disc
 
 ### 3.9 CAP-C1 · `challenges_top` — أبرز التحديات المتكررة
 
-Class: detection + topic attribution. Map `challenge` findings to canonical CHAL groups via the curated synonym seed first (legacy `v2_synonyms`, 91 rows, is *seed evidence* — re-reviewed, not migrated as truth), then embedding-cluster the unmapped remainder (§5) and route new groups to owner naming (R-P1). **Publish mapping coverage** — «٨٧٪ من صفوف التحديات أُسندت لمجموعة قانونية» — because an unstated long tail is how a top-10 quietly becomes a top-10-of-40% [FACT MASTER_PROMPT E.8]. Distinct sessions; per-100 rate; Wilson CI; MR-04; base line per MR-03. Fresh-per-period discovery (R-P3): each period's clusters mined from that period's sessions; prior taxonomy assists classification but may not suppress a newly dominant category [DECISION GREENFIELD §6.3]. **Cadence:** monthly or quarterly («آخر شهر/ربع» — both registered).
+Class: detection + topic attribution. Map `challenge` findings to canonical CHAL groups via the curated synonym seed first (legacy `v2_synonyms`, 91 rows, is *seed evidence* — re-reviewed, not migrated as truth), then embedding-cluster the unmapped remainder (§5) and route new groups to owner naming (R-P1). **Publish mapping coverage** — «87% من صفوف التحديات أُسندت لمجموعة معيارية» — because an unstated long tail is how a top-10 quietly becomes a top-10-of-40% [FACT MASTER_PROMPT E.8]. Distinct sessions; per-100 rate; Wilson CI; MR-04; base line per MR-03. Fresh-per-period discovery (R-P3): each period's clusters mined from that period's sessions; prior taxonomy assists classification but may not suppress a newly dominant category [DECISION GREENFIELD §6.3]. **Cadence:** monthly or quarterly («آخر شهر/ربع» — both registered).
 
 ### 3.10 CAP-C2 · `challenge_symptoms_causes_asks` — الأعراض والأسباب المعلنة وطلب المستفيد الفعلي
 
@@ -351,7 +407,7 @@ Class: detection; **blocked on new extraction** — the legacy columns for sympt
 
 Class: measurement. Quarterly refresh cadence, monthly comparison unit — both declared [FACT MASTER_PROMPT E.10]. For each canonical category (CHAL, VIOL, SAT, QST clusters): rate per 100 sessions this month vs last, absolute + relative change, two-proportion z-test (or Poisson e-test for rare categories, §7.3), CI on the difference. **BH correction across all category cells scanned in the run** (MR-11) — a scan of 60 categories at α=0.05 expects 3 false "trends" uncorrected. **Suppress any cell below MIN_CELL_N rather than reporting a dramatic swing on 4 sessions — that swing is the single most likely thing to end up on a slide** [FACT E.10]. MR-12 composition check mandatory (programme mix, consultant cohort, ingestion backlog); MR-13 censoring at taxonomy introductions. Rendering: rising/falling/flat with q-value tiers, never raw sorted percentage deltas.
 
-### 3.12 CAP-C4 · `top_inquiries_and_categories_3m` — أبرز الاستفسارات والفئات خلال ٣ أشهر
+### 3.12 CAP-C4 · `top_inquiries_and_categories_3m` — أبرز الاستفسارات والفئات خلال 3 أشهر
 
 Class: measurement over B3's clustering artifact (no separate pipeline). Rolling 3-month window; top QST clusters by distinct sessions; top-5 categories with «قطاع» disambiguated into its three registered dimensions and the answer labelled with which is shown — `service_category` (planning baseline 77.3% populated, 48 values; remainder = named exclusion `dimension_unresolved`), `government_entity`, and `business_sector` = **UNAVAILABLE until an external identity source exists** → `declare_unanswerable(DIMENSION_NOT_AVAILABLE)` for that reading [FACT CORE-BRIEF §13.3]. The discipline is entirely denominators + suppression; nothing methodologically novel [FACT E.11].
 
@@ -361,7 +417,7 @@ Class: entity-scoped extraction. **An entity-resolution problem before an analyt
 
 **Method.**
 1. **Canonical entity registry before analytics** (`tax.entity_registry` + `tax.entity_alias`): reviewed list of actual bodies with alias sets covering spelling variants, abbreviations, ASR mishearings, English forms. Worked alias set: `ENT-0007` هيئة الزكاة والضريبة والجمارك ← {«الزكاة»، «هيئة الزكاة»، «الزكاة والدخل»، «مصلحة الزكاة والدخل»، «زاتكا»، «ZATCA»، «هيئة الزكاه والضريبه» *(ASR/spelling)*}. Seeding: frequency-sort the distinct strings — the head covers most mentions; the tail routes to steward review. New aliases only via the review loop (ADR-0012); alias edges are versioned.
-2. **Resolution at extraction time:** `government_mention` findings carry `entity_id` (resolved) or `raw_mention` + unresolved status. **Publish mapping coverage** («٩١٪ من الإشارات أُسندت لجهة قانونية») — the unresolved tail is the named exclusion `entity_unresolved`, a stated limitation, never a silent one.
+2. **Resolution at extraction time:** `government_mention` findings carry `entity_id` (resolved) or `raw_mention` + unresolved status. **Publish mapping coverage** («91% من الإشارات أُسندت لجهة معيارية معتمدة») — the unresolved tail is the named exclusion `entity_unresolved`, a stated limitation, never a silent one.
 3. **Problem-type attachment:** classify the co-occurring difficulty from surrounding turns into the reviewed problem taxonomy (تراخيص، قرارات تمويل، متطلبات مستندية، مدد زمنية، تداخل اختصاصات…), stored as `problem_category_id`.
 4. **Rank by distinct sessions**, per 100 sessions, Wilson CI, MR-04.
 5. **Framing — hard constraint from the owner: «(مجرد استخراج من النص)».** Output is *mentions in sessions*, never an assessment of an entity's performance. Renderer contract: no evaluative adjectives, no «الأسوأ»-style ranking language, standing caveat that mention frequency reflects what beneficiaries discussed, not agency quality [DECISION GREENFIELD §5-C5]. This is a government product naming government bodies — wrong framing makes correct numbers unusable. Banned-phrase lint list in §4.3.
@@ -382,7 +438,7 @@ Class: detection over the R-P2 clustering artifact — **cannot ship before the 
 1. Cluster `decision_point` findings into canonical decisions (§5): «شركة أم مؤسسة»، «أُدخل شريكاً أم لا»، «أغلق الفرع أم أستمر»، «أستمر بالتمويل الذاتي أم أطلب تمويلاً».
 2. Attribute beneficiary questions (from B3's `beneficiary_question` findings) to a decision cluster **within the same session** (embedding similarity to the cluster centroid above threshold; unattributed questions stay unattributed — no forced assignment).
 3. **Hesitation index** = questions attributed to the same decision cluster per session, averaged over sessions where that decision appears. **Rank by index, not frequency:** a decision appearing in 2,000 sessions at 1.1 questions each is *settled*; one in 200 sessions at 4.8 questions each is where beneficiaries are stuck — and the second is what the owner asked about [FACT E.14-3].
-4. Report **resolution rate** beside the index: share of appearances followed by an `action_item` anchored to that decision — converts the finding into something actionable («قرار الكيان القانوني: مؤشر التردد ٤٫٢، يُحسم داخل الجلسة في ٣١٪ فقط من الحالات»).
+4. Report **resolution rate** beside the index: share of appearances followed by an `action_item` anchored to that decision — converts the finding into something actionable («قرار الكيان القانوني: مؤشر التردد 4.2، يُحسم داخل الجلسة في 31% فقط من الحالات»).
 5. MR-04 suppression on decisions appearing in <30 sessions; index reported with a bootstrap CI (§7.11).
 
 **Validation:** MR-10 on decision-cluster assignment. **Cadence:** quarterly.
@@ -410,7 +466,7 @@ Class: consistency (aggregate) / **accusation-class when grouped by named consul
 
 Class: consistency/association. Vocabularies for status/attendance come from the internal source contract [ASSUME OD-07 — access mechanism and enum semantics pending; safe assumption: read-only export with documented enums; unmapped legacy status strings surface through CAP-D9, never silently bucketed].
 
-**Method.** Condition quality outcomes (clear-steps rate, satisfaction polarity mix, beneficiary rating mean) on operational categories (status, attendance class, reschedule count, lead time between booking and session). Two-proportion tests between categories; MR-04 per cell; MR-12 composition (programme mix differs across channels). **Association wording only (§4):** «الجلسات المعاد جدولتها مرتين تُظهر نسبة خطوات واضحة أقل (٣٨٪ مقابل ٤٩٪)» — never «إعادة الجدولة تسبب انخفاض الجودة». Confound note rendered: attendance patterns correlate with beneficiary segment and channel; stratify by both before publishing any difference. **Cadence:** monthly.
+**Method.** Condition quality outcomes (clear-steps rate, satisfaction polarity mix, beneficiary rating mean) on operational categories (status, attendance class, reschedule count, lead time between booking and session). Two-proportion tests between categories; MR-04 per cell; MR-12 composition (programme mix differs across channels). **Association wording only (§4):** «الجلسات المعاد جدولتها مرتين تُظهر نسبة خطوات واضحة أقل (38% مقابل 49%)» — never «إعادة الجدولة تسبب انخفاض الجودة». Confound note rendered: attendance patterns correlate with beneficiary segment and channel; stratify by both before publishing any difference. **Cadence:** monthly.
 
 ### 3.19 CAP-D4 · `cancellation_noshow_analysis` — تحليل الإلغاء وعدم الحضور
 
@@ -432,7 +488,7 @@ Class: composition — inherits the strictest constituent gate. Axes: volume; be
 **Composition rules (normative):**
 1. **Never a single composite score** [REC — a single score invites ranking abuse and hides coverage asymmetries; alternative: owner-weighted index — rejected for launch; revisit-trigger: owner explicitly requests a governed rubric with published weights]. Each axis renders with its own denominator, coverage, and period.
 2. **What may NOT be shown without review:** unreviewed violation candidates (show only «قيد المراجعة: N» with no case detail); unreviewed D2 per-consultant gaps; any quote not R7-verified; any comparative claim on <30 sessions in window; beneficiary comments containing PII (placeholder policy, I15).
-3. **Cohort context is mandatory:** every rate renders beside the same-programme cohort distribution (percentile band, not rank — «ضمن الشريحة ٦٠–٨٠» not «المرتبة ١٢ من ٤٥») [REC — exact ranks on noisy rates imply false precision; revisit if the owner requires ranks, then only with overlapping-CI grouping].
+3. **Cohort context is mandatory:** every rate renders beside the same-programme cohort distribution (percentile band, not rank — «ضمن الشريحة 60–80» not «المرتبة 12 من 45») [REC — exact ranks on noisy rates imply false precision; revisit if the owner requires ranks, then only with overlapping-CI grouping].
 4. **Access:** quality/compliance roles per RBAC (I14); the 360 is a coaching instrument, not a league table — the renderer carries this framing note.
 
 **Cadence:** monthly refresh; ad-hoc by authorized query.
@@ -466,7 +522,7 @@ Routing classes (each cluster gets exactly one, review-approved before appearing
 
 ### 3.24 CAP-D9 · `data_quality_disagreement` — جودة البيانات وتعارض المصادر
 
-Class: measurement — **data quality as a first-class user-visible capability** [DECISION GREENFIELD §5-D9], not an ops dashboard. Registered DQ metrics (all governed, all drill-down): unmatched provider↔internal sessions (both directions); unresolved consultant identities by `resolution_status`; rating rows bridging to no session + bridge rate trend; transcript-less sessions; speaker-role-missing turn share; extraction validation rejection rate; `not_yet_reclassified` counts by taxonomy version; provider-source distribution of active transcripts; duration disagreement beyond tolerance between provider metadata and internal records; DLQ depth and age. Each metric declares a warning threshold in the constants registry; threshold breaches emit `ops` observations and appear in packs' coverage pages. This capability is why the answer to «ليش التغطية ٤٨٪؟» is a report, not a shrug — and it is the public gauge of doc 09's reconciliation work. **Cadence:** continuous computation; monthly summary.
+Class: measurement — **data quality as a first-class user-visible capability** [DECISION GREENFIELD §5-D9], not an ops dashboard. Registered DQ metrics (all governed, all drill-down): unmatched provider↔internal sessions (both directions); unresolved consultant identities by `resolution_status`; rating rows bridging to no session + bridge rate trend; transcript-less sessions; speaker-role-missing turn share; extraction validation rejection rate; `not_yet_reclassified` counts by taxonomy version; provider-source distribution of active transcripts; duration disagreement beyond tolerance between provider metadata and internal records; DLQ depth and age. Each metric declares a warning threshold in the constants registry; threshold breaches emit `ops` observations and appear in packs' coverage pages. This capability is why the answer to «ليش التغطية 48%؟» is a report, not a shrug — and it is the public gauge of doc 09's reconciliation work. **Cadence:** continuous computation; monthly summary.
 
 ### 3.25 CAP-D10 · `executive_packs` — الحزم التنفيذية الشهرية والربعية
 
@@ -495,7 +551,7 @@ The distinction between what people said and what a model concluded is the diffe
 |---|---|---|---|
 | **Stated cause** (beneficiary said X is why) | Yes — clustered, counted, quoted | «الأسباب كما ذكرها المستفيد» — mandatory header; each cause with quote + ULID | «قال المستفيد: ما قدرت أفتح الحساب البنكي لأن السجل معلّق» |
 | **Association** (A co-occurs with B) | Yes — with tests + confound checks | «يرتبط بـ» / «يظهر مع» / «مصاحب لـ», never «بسبب» | «الجلسات المُلغاة مرتبطة بفئة خدمة التمويل (فرق ذو دلالة)» |
-| **Contrastive pattern** (feature distinguishes class) | Yes — lift + CI + BH + strata (MR-06/11) | «يميّز» / «أكثر شيوعاً في» with counts both sides | «صيغ الأمر أكثر شيوعاً ٣٫٢× في الجلسات الواضحة الخطوات» |
+| **Contrastive pattern** (feature distinguishes class) | Yes — lift + CI + BH + strata (MR-06/11) | «يميّز» / «أكثر شيوعاً في» with counts both sides | «صيغ الأمر أكثر شيوعاً 3.2× في الجلسات الواضحة الخطوات» |
 | **Model-inferred cause** | **No** (operational surfaces) | — | banned: «السبب الجذري لانخفاض الرضا هو…» as a model conclusion |
 | **Agreement/disagreement between instruments** | Yes — as structure, not verdict | «اتساق/عدم اتساق بين المصدرين» — neither instrument declared "right" | D1/D2 wording |
 | **Extraction about a government entity** | Yes — mention-report only | «كما ورد في الجلسات (مجرد استخراج من النص)»; no evaluative adjectives | C5 framing |
@@ -631,13 +687,13 @@ Rendering rule: the top-3 exclusions by `n` always render in the answer body; th
 The B1 example of §3.4 shows the inline form. The expanded form (answer footer / pack coverage page):
 
 > **نطاق التحليل والتغطية**
-> الفترة: ٢٠٢٦-٠٧-٠١ إلى ٢٠٢٦-٠٨-٠١ (نهاية غير مشمولة) · محسوبة بتاريخ ٢٠٢٦-٠٨-٠٢
-> إجمالي الجلسات: ١٦٬٩١١ · المطابقة لنطاق السؤال: ١٬٢٤٠ · المستخدمة في الحساب: ١٬١٥٠
-> **المستبعدات (مسمّاة):** ٤١ جلسة بلا نص · ٢٢ أدوار متحدثين غير محسومة · ٢٧ تصنيف الوضوح غير متوفر
-> **توزيع مصادر النصوص:** Read.ai: ١٬١٠٨ · مزود بديل: ٤٢
-> التحقق: ١٬١٥٠ + (٤١+٢٢+٢٧) = ١٬٢٤٠ ✓
+> الفترة: 2026-07-01 إلى 2026-08-01 (نهاية غير مشمولة) · محسوبة بتاريخ 2026-08-02
+> إجمالي الجلسات: 16٬911 · المطابقة لنطاق السؤال: 1٬240 · المستخدمة في الحساب: 1٬150
+> **المستبعدات (مسمّاة):** 41 جلسة بلا نص · 22 أدوار متحدثين غير محسومة · 27 تصنيف الوضوح غير متوفر
+> **توزيع مصادر النصوص:** Read.ai: 1٬108 · مزود بديل: 42
+> التحقق: 1٬150 + (41+22+27) = 1٬240 ✓
 
-The identity line renders in debug/reviewer views and is asserted always; user-facing views render the counts without the arithmetic. A Lane-3 answer adds «أقسام غير مكتملة: ١ من ١٤ (يوليو ٢٠٢٥) — النتيجة معلَّمة كغير مكتملة» (never silently complete — I16, `DEEP_JOB_INCOMPLETE`).
+The identity line renders in debug/reviewer views and is asserted always; user-facing views render the counts without the arithmetic. A Lane-3 answer adds «أقسام غير مكتملة: 1 من 14 (يوليو 2025) — النتيجة معلَّمة كغير مكتملة» (never silently complete — I16, `DEEP_JOB_INCOMPLETE`).
 
 ---
 
@@ -655,7 +711,7 @@ half   = (z / (1 + z²/n)) · sqrt( p̂(1−p̂)/n + z²/4n² )
 CI     = centre ± half
 ```
 
-Worked: k=40, n=100 → p̂=0.40, CI ≈ (0.309, 0.498) — rendered «٤٠٪ (٣١–٥٠٪)». Preferred over normal approximation because it behaves at small n and near 0/1 (violation rates) [REC — standard choice; alternative Jeffreys interval acceptable; do not mix methods across the product].
+Worked: k=40, n=100 → p̂=0.40, CI ≈ (0.309, 0.498) — rendered «40% (31–50%)». Preferred over normal approximation because it behaves at small n and near 0/1 (violation rates) [REC — standard choice; alternative Jeffreys interval acceptable; do not mix methods across the product].
 
 ### 7.2 Two-proportion comparison (B1, C3, D4, D6)
 
@@ -727,7 +783,7 @@ For cluster `c` with answer set `A = {a₁…a_k}` (embedded, length-normalised)
 
 ### 7.10 Sensitivity analysis (B2 thresholds; GREENFIELD §5-B2 "no arbitrary threshold")
 
-For each calibrated constant (`DEAD_AIR_FLOOR_S`, churn run length, drift threshold): compute the headline result at threshold × {0.5, 0.75, 1.0, 1.25, 1.5}; publish the elasticity («ترتيب مواضع الفقد ثابت عبر النطاق ١٥–٣٠ ثانية») in the method note. A ranking that reorders materially within the band is not publishable as a ranking — render per-mode totals without ordinal claims and flag for re-calibration.
+For each calibrated constant (`DEAD_AIR_FLOOR_S`, churn run length, drift threshold): compute the headline result at threshold × {0.5, 0.75, 1.0, 1.25, 1.5}; publish the elasticity («ترتيب مواضع الفقد ثابت عبر النطاق 15–30 ثانية») in the method note. A ranking that reorders materially within the band is not publishable as a ranking — render per-mode totals without ordinal claims and flag for re-calibration.
 
 ### 7.11 Support planning and bootstrap CIs
 
@@ -795,6 +851,11 @@ Item 2 starts first; it needs owner time (naming queues), not just engineering t
 | Embedding model + clustering thresholds | §5 | deferred to EXP-04 by design |
 | κ thresholds (0.70/0.50), FDR q (0.05/0.10), TVD 0.10, smaller-class ≥ 300 | §1, §7.6 | [REC] with stated revisit triggers — revisit after two full validation cycles |
 | Dispersion quartile calibration | §3.6 | calibrated on first corpus snapshot; frozen per version; recalibrate on embedding change |
+| Review SLA values (7d/2d) + reviewer staffing/assignment | MR-17 queue reporting; doc 15 QT-14 | [ASSUME OD-30] |
+| False-negative sample size/cadence (weekly stratified) | MR-18; doc 15 DS-14 | [ASSUME OD-32] — EXP-11 owns the design |
+| Month completeness gate ≥98% + nightly deadline | MR-20; CAP-OPS-08 trigger | [ASSUME OD-28 — Amendment §13 working assumption] |
+| Action Center ownership + closure authority | MR-19 readings | [ASSUME OD-34] |
+| Detector release cadence | MR-18 floor application per release | [ASSUME OD-33] — doc 15 §6.6 evidence standard |
 
 Every [REC] threshold above is a starting point with a named recalibration trigger — none is a bare TBD, and none may be changed outside the constants registry's review path (MR-16).
 

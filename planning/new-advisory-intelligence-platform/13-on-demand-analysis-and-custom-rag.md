@@ -124,7 +124,7 @@ Period resolves to `[2026-01-01, 2026-04-01)`. Lane-0 abstains (no committed cap
 **(b) → P7 (impossible).** «ما نسبة الجلسات حسب القطاع الصناعي للمستفيد؟»
 «قطاع» disambiguation (CORE-BRIEF §13.3): the industrial reading is `business_sector`, which is UNAVAILABLE until an external identity source exists. → **P7, `declare_unanswerable(DIMENSION_NOT_AVAILABLE)`**, detail naming the two available alternatives (`service_category`, `government_entity`) as clarification-style follow-ups.
 
-**(c) → P3 (structured-only).** «كم جلسة أُلغيت قبل أقل من ٢٤ ساعة من موعدها في يونيو 2026؟»
+**(c) → P3 (structured-only).** «كم جلسة أُلغيت قبل أقل من 24 ساعة من موعدها في يونيو 2026؟»
 Cancellation timestamp and scheduled start both exist in `core` attendance/status facts (doc 08 §3), but no registered metric covers cancellation lead-time buckets. → **P3**: offer a structured-only Lane-3 job (seconds, no model calls — §7.8) and simultaneously emit a registry fast-add proposal (`cancellation_lead_time_hours` bucket dimension) into the ADR-0012 review loop.
 
 **(d) → P4 (evidence).** «أعطني أمثلة على كيف يشرح المستشارون شروط برنامج الكفالات.»

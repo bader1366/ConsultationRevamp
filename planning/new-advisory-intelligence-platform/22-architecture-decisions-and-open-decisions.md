@@ -543,7 +543,7 @@ Fields per entry: question · decision owner (role at Monsha'at) · safe working
 - *Needed by:* P1 (eval store topology).
 
 **OD-21 — Numerals and calendar in executive outputs.**
-- *Question:* Latin (0–9) vs Arabic-Indic (٠–٩) digits; Hijri display on pack covers?
+- *Question:* Latin (0–9) vs Arabic-Indic (0–9) digits; Hijri display on pack covers?
 - *Owner:* Product owner (final format preference).
 - *Assumption:* Latin digits with tabular figures; Gregorian primary with Arabic month names; optional secondary Hijri on pack covers [ASSUME OD-21].
 - *If wrong:* renderer format packs swap (doc 18 owns the catalogue); exports re-template; zero data change.

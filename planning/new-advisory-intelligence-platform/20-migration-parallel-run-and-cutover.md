@@ -436,13 +436,13 @@ The set grows only by committing new entries with their crosswalk proof; it neve
   crosswalk: {legacy_label: "تضليل", new: "VIOL-003", mapping: 1to1}
   legacy_extract:                                      # harness-side parsing of legacy PRESENTATION
     template: "regex"
-    pattern: 'تضليل[^0-9٠-٩]{0,40}([0-9٠-٩,،]+)'
-    digit_normalize: true                              # ٠-٩/۰-۹ → 0-9, strip ،
+    pattern: 'تضليل[^0-90-9]{0,40}([0-90-9,،]+)'
+    digit_normalize: true                              # 0-9/۰-۹ → 0-9, strip ،
   nip_read: "$.metric_results[?(@.category_id=='VIOL-003')].value"
   accepted_difference: AD-001                          # dedup: expect nip_lower, ratio ≤ 1.84
 ```
 
-Nightly evaluation walk-through: legacy answers «…تضليل: ٤١٢ حالة…» → extracted 412; NIP envelope returns `{"category_id":"VIOL-003","value":251,"n_sessions":1104,"period":{…}}` → ratio 412/251 = 1.64, direction `nip_lower`, within AD-001's `[1.0, 1.84]` bound ⇒ **ACCEPTED_DIFF(AD-001)**, logged with both values. Had NIP returned 430 (ratio 0.96, wrong direction), the run classifies **FAIL** — the dedup ledger entry cannot absorb an increase [DECISION MASTER_PROMPT §13.9 direction rule] — and PARITY.md carries the full diff with both raw payloads for diagnosis.
+Nightly evaluation walk-through: legacy answers «…تضليل: 412 حالة…» → extracted 412; NIP envelope returns `{"category_id":"VIOL-003","value":251,"n_sessions":1104,"period":{…}}` → ratio 412/251 = 1.64, direction `nip_lower`, within AD-001's `[1.0, 1.84]` bound ⇒ **ACCEPTED_DIFF(AD-001)**, logged with both values. Had NIP returned 430 (ratio 0.96, wrong direction), the run classifies **FAIL** — the dedup ledger entry cannot absorb an increase [DECISION MASTER_PROMPT §13.9 direction rule] — and PARITY.md carries the full diff with both raw payloads for diagnosis.
 
 ### 3.3 Difference classification — six classes, with the direction rule
 
